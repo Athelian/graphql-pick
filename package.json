@@ -1,0 +1,21 @@
+{
+  "name": "graphql-pick",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsx test.ts"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graphql-tag": "^2.12.6"
+  },
+  "devDependencies": {
+    "fast-deep-equal": "^3.1.3",
+    "graphql": "^16.8.1",
+    "tsx": "^4.10.2"
+  }
+}
