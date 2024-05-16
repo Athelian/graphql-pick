@@ -1,16 +1,8 @@
 "use strict";
 
 import equal from "fast-deep-equal";
-import {
-  DocumentNode,
-  Kind,
-  SelectionNode,
-  SelectionSetNode,
-  graphql,
-  print
-} from "graphql";
+import { DocumentNode, Kind, SelectionNode, SelectionSetNode } from "graphql";
 import gql from "graphql-tag";
-import schemaWithMocks from "./mocks";
 
 export default function pick(
   document: DocumentNode,
@@ -19,33 +11,34 @@ export default function pick(
   const def = document.definitions[0];
   if (!("selectionSet" in def)) return document;
 
-  for (const fieldPath of fieldPaths) {
-    const paths = fieldPath.split(".").reverse();
-    const selectionSets: SelectionSetNode[] = [def.selectionSet];
+  const selectionSets = [def.selectionSet];
+  const fieldPathSplits = fieldPaths.map((fp) => fp.split("."));
 
-    while (paths.length && selectionSets.length) {
-      const path = paths.pop() as string;
-      const selectionSet = selectionSets.pop() as SelectionSetNode;
+  for (let i = 0; selectionSets.length; i++) {
+    const iPaths = fieldPathSplits.map((fps) => fps[i]);
+    const selectionSet = selectionSets.pop() as SelectionSetNode;
 
-      for (let i = 0; i < selectionSet.selections.length; i++) {
-        let selection = selectionSet.selections[i];
+    for (let i = 0; i < selectionSet.selections.length; i++) {
+      let selection = selectionSet.selections[i];
 
-        if ("selectionSet" in selection && selection.selectionSet?.selections) {
-          selectionSets.push(selection.selectionSet);
-        }
+      if ("selectionSet" in selection && selection.selectionSet?.selections) {
+        selectionSets.push(selection.selectionSet);
+      }
 
-        switch (selection.kind) {
-          case Kind.INLINE_FRAGMENT:
-            if (selection.typeCondition?.name.value === path) {
-              selectionSets.push(selection.selectionSet);
-            }
-            break;
-          case Kind.FIELD:
-            if (selection.name.value !== path) {
-              (selectionSet.selections as SelectionNode[]).splice(i, 1);
-            }
-            break;
-        }
+      switch (selection.kind) {
+        case Kind.INLINE_FRAGMENT:
+          if (
+            selection.typeCondition?.name.value &&
+            iPaths.includes(selection.typeCondition.name.value)
+          ) {
+            selectionSets.push(selection.selectionSet);
+          }
+          break;
+        case Kind.FIELD:
+          if (!iPaths.includes(selection.name.value)) {
+            (selectionSet.selections as SelectionNode[]).splice(i, 1);
+          }
+          break;
       }
     }
   }
@@ -53,7 +46,7 @@ export default function pick(
   return document;
 }
 
-// it should remove a field from an object type
+// removes a field from an object type
 function test1() {
   const initial = gql`
     query {
@@ -68,20 +61,19 @@ function test1() {
     query {
       user {
         name
+        age
       }
     }
   `;
 
   const result = pick(initial, ["user.name"]);
 
-  if (equal(result.definitions, expected.definitions)) {
-    console.log("Success");
-  } else {
-    console.error("Error");
+  if (!equal(result.definitions, expected.definitions)) {
+    throw new Error("Error");
   }
 }
 
-// it should remove the field from a union object type
+// removes a field from an line fragment type
 function test2() {
   const initial = gql`
     query {
@@ -110,19 +102,19 @@ function test2() {
 
   const result = pick(initial, ["user.organization.__Organization.name"]);
 
-  if (equal(result.definitions, expected.definitions)) {
-    console.log("Success");
-  } else {
-    console.error("Error");
+  if (!equal(result.definitions, expected.definitions)) {
+    throw new Error("Error");
   }
 }
 
 [
   test1, //
   test2
-].forEach((test) => test());
-
-// graphql({
-//   schema: schemaWithMocks,
-//   source: print(result)
-// }).then((result: any) => console.log("Got result", result));
+].forEach((func) => {
+  try {
+    func();
+    console.log("Success");
+  } catch (e) {
+    console.error("Error");
+  }
+});
