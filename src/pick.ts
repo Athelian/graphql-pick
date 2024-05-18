@@ -8,15 +8,18 @@ import {
   SelectionSetNode
 } from "graphql";
 
-import { getSchema } from "./config";
+import { getOptions, getSchema } from "./config";
 import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "./errors";
 
 export default function pick(fieldPaths: string[]): OperationDefinitionNode {
+  const schema = getSchema();
+  const options = getOptions();
+
   const operationDefinition = buildOperationNodeForField({
-    schema: getSchema(),
+    schema,
     kind: OperationTypeNode.QUERY,
     field: "user"
   });
@@ -29,6 +32,7 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   let i = 0;
   while (selectionSets.length) {
     let hasFieldSelection = false;
+    let walkBack = false;
 
     const iPaths = fieldPathSplits.map((fps) => fps[i]);
     const selectionSet = selectionSets.pop() as SelectionSetNode;
@@ -40,14 +44,23 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
       switch (selection.kind) {
         case Kind.INLINE_FRAGMENT:
           if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
-            const iPathTypeSelections = iPaths.filter(
-              (p) => p[0] === p[0].toUpperCase()
-            );
-            if (!iPathTypeSelections.length) {
-              throw new UnspecifiedTypeResolverError();
-            }
-            if (!iPaths.includes(selection.typeCondition.name.value)) {
-              toDelete = true;
+            if (options.noResolve) {
+              if (
+                options.noResolve.includes(selection.typeCondition.name.value)
+              ) {
+                toDelete = true;
+                walkBack = true;
+              }
+            } else {
+              const iPathTypeSelections = iPaths.filter(
+                (p) => p[0] === p[0].toUpperCase()
+              );
+              if (!iPathTypeSelections.length) {
+                throw new UnspecifiedTypeResolverError();
+              }
+              if (!iPaths.includes(selection.typeCondition.name.value)) {
+                toDelete = true;
+              }
             }
           }
           break;
@@ -72,8 +85,12 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
       throw new UnspecifiedSelectionsError();
     }
 
+    if (!walkBack) {
+      i++;
+    }
+
+    walkBack = false;
     hasFieldSelection = false;
-    i++;
   }
 
   return operationDefinition;

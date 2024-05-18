@@ -1,9 +1,19 @@
 import { GraphQLSchema } from "graphql";
 
-let globalSchema: GraphQLSchema | null = null;
+const DEFAULT_SCHEMA = null;
+const DEFAULT_OPTIONS = {};
 
-export function initSchema(schema: GraphQLSchema) {
+let globalSchema: GraphQLSchema | null = DEFAULT_SCHEMA;
+let globalOptions: Options = DEFAULT_OPTIONS;
+
+interface Options {
+  /** asd */
+  noResolve?: string[];
+}
+
+export function initGQLPick(schema: GraphQLSchema, options?: Options) {
   globalSchema = schema;
+  globalOptions = options || {};
 }
 
 export function getSchema() {
@@ -13,3 +23,11 @@ export function getSchema() {
   return globalSchema;
 }
 
+export function getOptions() {
+  return globalOptions;
+}
+
+export function resetGQLPick() {
+  globalSchema = DEFAULT_SCHEMA;
+  globalOptions = DEFAULT_OPTIONS;
+}

@@ -1,6 +1,6 @@
 import gql from "graphql-tag";
 
-import pick, { initSchema } from "../";
+import pick, { initGQLPick } from "../";
 import schemaWithMocks from "./mocks/graphqlMocks";
 import { schema } from "./mocks/graphqlMocks";
 import { getResponse } from "./utils/index";
@@ -10,7 +10,10 @@ import {
 } from "../src/errors";
 
 describe("pick", () => {
-  initSchema(schema);
+  beforeAll(() => {
+    initGQLPick(schema);
+  });
+
   it("should pick a field from an object type", async () => {
     const expected = gql`
       query {
@@ -54,5 +57,30 @@ describe("pick", () => {
     const myFunction = () => pick(["user.organization.name"]);
     await expect(myFunction).toThrow(UnspecifiedTypeResolverError);
     await expect(myFunction).toThrow("Missing type resolution for union type.");
+  });
+});
+
+describe("pick with options", () => {
+  beforeAll(() => {
+    initGQLPick(schema, { noResolve: ["BadRequest"] });
+  });
+
+  it("should pick a field by auto resolution", async () => {
+    const expected = gql`
+      query {
+        user {
+          organization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick(["user.organization.name"]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(expectedResponse).toEqual(resultResponse);
   });
 });
