@@ -29,9 +29,10 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   const selectionSets = [operationDefinition.selectionSet];
   const fieldPathSplits = fieldPaths.map((fp) => fp.split("."));
 
-  let i = -1;
+  let i = 0;
   while (selectionSets.length) {
-    i++;
+    let hasFieldSelection = false;
+
     const iPaths = fieldPathSplits.map((fps) => fps[i]);
     const selectionSet = selectionSets.pop() as SelectionSetNode;
 
@@ -62,13 +63,20 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
 
       if (toDelete) {
         (selectionSet.selections as SelectionNode[]).splice(i, 1);
-      } else if (
-        "selectionSet" in selection &&
-        selection.selectionSet?.selections
-      ) {
-        selectionSets.push(selection.selectionSet);
+      } else {
+        hasFieldSelection = true;
+        if ("selectionSet" in selection && selection.selectionSet?.selections) {
+          selectionSets.push(selection.selectionSet);
+        }
       }
     }
+
+    if (hasFieldSelection === false) {
+      throw new Error("No selections found in fieldPaths");
+    }
+
+    hasFieldSelection = false;
+    i++;
   }
 
   return operationDefinition;
@@ -112,8 +120,15 @@ async function test2() {
   assert.deepEqual(expectedResponse, resultResponse);
 }
 
+// throws an error if no selections are found in fieldPaths
+async function test3() {
+  const result = pick(["user"]);
+
+  const resultResponse = await getResponse(result);
+}
+
 try {
-  for (const test of [test1, test2]) {
+  for (const test of [test1, test2, test3]) {
     await test();
   }
   console.log("All tests passed");
