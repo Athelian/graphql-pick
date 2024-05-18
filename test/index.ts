@@ -41,11 +41,16 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
 
       switch (selection.kind) {
         case Kind.INLINE_FRAGMENT:
-          if (
-            selection.typeCondition?.kind === Kind.NAMED_TYPE &&
-            !iPaths.includes(selection.typeCondition.name.value)
-          ) {
-            toDelete = true;
+          if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
+            const iPathTypeSelections = iPaths.filter(
+              (p) => p[0] === p[0].toUpperCase()
+            );
+            if (!iPathTypeSelections.length) {
+              throw new Error("No union type selections found in fieldPaths");
+            }
+            if (!iPaths.includes(selection.typeCondition.name.value)) {
+              toDelete = true;
+            }
           }
           break;
         case Kind.FIELD:
@@ -78,7 +83,6 @@ async function test1() {
       }
     }
   `;
-
   const result = pick(["user.name"]);
 
   const expectedResponse = await getResponse(expected);
@@ -100,7 +104,6 @@ async function test2() {
       }
     }
   `;
-
   const result = pick(["user.organization.Organization.name"]);
 
   const expectedResponse = await getResponse(expected);
@@ -123,8 +126,4 @@ function getResponse(ast: ASTNode) {
     schema: schemaWithMocks,
     source: print(ast)
   });
-}
-
-function isUnionType(type: any) {
-  return type.astNode?.kind === Kind.UNION_TYPE_DEFINITION;
 }
