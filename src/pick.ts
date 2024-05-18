@@ -1,25 +1,18 @@
-"use strict";
-
 import { buildOperationNodeForField } from "@graphql-toolkit/common";
-import assert from "assert";
 
 import {
-  ASTNode,
   Kind,
   OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
-  SelectionSetNode,
-  graphql,
-  print
+  SelectionSetNode
 } from "graphql";
-import gql from "graphql-tag";
 
-import schemaWithMocks, { schema } from "./mocks.js";
+import { getSchema } from "./config";
 
 export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   const operationDefinition = buildOperationNodeForField({
-    schema,
+    schema: getSchema(),
     kind: OperationTypeNode.QUERY,
     field: "user"
   });
@@ -80,65 +73,4 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   }
 
   return operationDefinition;
-}
-
-// picks a field from an object type
-async function test1() {
-  const expected = gql`
-    query {
-      user {
-        name
-      }
-    }
-  `;
-  const result = pick(["user.name"]);
-
-  const expectedResponse = await getResponse(expected);
-  const resultResponse = await getResponse(result);
-
-  return assert.deepEqual(expectedResponse, resultResponse);
-}
-
-// picks a field from a union type
-async function test2() {
-  const expected = gql`
-    query {
-      user {
-        organization {
-          ... on Organization {
-            name
-          }
-        }
-      }
-    }
-  `;
-  const result = pick(["user.organization.Organization.name"]);
-
-  const expectedResponse = await getResponse(expected);
-  const resultResponse = await getResponse(result);
-
-  assert.deepEqual(expectedResponse, resultResponse);
-}
-
-// throws an error if no selections are found in fieldPaths
-async function test3() {
-  const result = pick(["user"]);
-
-  const resultResponse = await getResponse(result);
-}
-
-try {
-  for (const test of [test1, test2, test3]) {
-    await test();
-  }
-  console.log("All tests passed");
-} catch (e) {
-  console.error(e);
-}
-
-function getResponse(ast: ASTNode) {
-  return graphql({
-    schema: schemaWithMocks,
-    source: print(ast)
-  });
 }
