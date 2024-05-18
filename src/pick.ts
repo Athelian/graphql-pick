@@ -9,7 +9,10 @@ import {
 } from "graphql";
 
 import { getSchema } from "./config";
-import { UnspecifiedSelectionsError } from "./errors";
+import {
+  UnspecifiedSelectionsError,
+  UnspecifiedTypeResolverError
+} from "./errors";
 
 export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   const operationDefinition = buildOperationNodeForField({
@@ -41,7 +44,7 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
               (p) => p[0] === p[0].toUpperCase()
             );
             if (!iPathTypeSelections.length) {
-              throw new Error("No union type selections found in fieldPaths");
+              throw new UnspecifiedTypeResolverError();
             }
             if (!iPaths.includes(selection.typeCondition.name.value)) {
               toDelete = true;

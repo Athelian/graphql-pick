@@ -1,7 +1,6 @@
 import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 
-// Fill this in with the schema string
 const typeDefs = `
   union OrganizationPayload = BadRequest | Organization
 
@@ -48,7 +47,6 @@ const resolver = {
   }
 };
 
-// Make a GraphQL schema with no resolvers
 export const schema = makeExecutableSchema({
   typeDefs,
   resolvers: [resolver],
@@ -57,7 +55,6 @@ export const schema = makeExecutableSchema({
   }
 });
 
-// Create a new schema with mocks
 const schemaWithMocks = addMocksToSchema({ schema, preserveResolvers: true });
 
 export default schemaWithMocks;
