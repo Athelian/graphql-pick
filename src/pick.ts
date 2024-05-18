@@ -9,6 +9,7 @@ import {
 } from "graphql";
 
 import { getSchema } from "./config";
+import { UnspecifiedSelectionsError } from "./errors";
 
 export default function pick(fieldPaths: string[]): OperationDefinitionNode {
   const operationDefinition = buildOperationNodeForField({
@@ -65,7 +66,7 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
     }
 
     if (hasFieldSelection === false) {
-      throw new Error("No selections found in fieldPaths");
+      throw new UnspecifiedSelectionsError();
     }
 
     hasFieldSelection = false;
