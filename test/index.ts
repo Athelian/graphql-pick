@@ -1,35 +1,53 @@
 "use strict";
 
-import equal from "fast-deep-equal";
-import { DocumentNode, Kind, SelectionNode, SelectionSetNode } from "graphql";
+import { buildOperationNodeForField } from "@graphql-toolkit/common";
+import assert from "assert";
+
+import {
+  ASTNode,
+  Kind,
+  OperationDefinitionNode,
+  OperationTypeNode,
+  SelectionNode,
+  SelectionSetNode,
+  graphql,
+  print
+} from "graphql";
 import gql from "graphql-tag";
 
-export default function pick(
-  document: DocumentNode,
-  fieldPaths: string[]
-): DocumentNode {
-  const def = document.definitions[0];
-  if (!("selectionSet" in def)) return document;
+import schemaWithMocks, { schema } from "./mocks.js";
 
-  const selectionSets = [def.selectionSet];
+export default function pick(fieldPaths: string[]): OperationDefinitionNode {
+  const operationDefinition = buildOperationNodeForField({
+    schema,
+    kind: OperationTypeNode.QUERY,
+    field: "user"
+  });
+
+  if (!("selectionSet" in operationDefinition)) return operationDefinition;
+
+  const selectionSets = [operationDefinition.selectionSet];
   const fieldPathSplits = fieldPaths.map((fp) => fp.split("."));
 
-  for (let i = 0; selectionSets.length; i++) {
+  let i = -1;
+  while (selectionSets.length) {
+    i++;
     const iPaths = fieldPathSplits.map((fps) => fps[i]);
     const selectionSet = selectionSets.pop() as SelectionSetNode;
 
-    for (let i = 0; i < selectionSet.selections.length; i++) {
+    for (let i = selectionSet.selections.length - 1; i >= 0; i--) {
       let selection = selectionSet.selections[i];
-
-      if ("selectionSet" in selection && selection.selectionSet?.selections) {
-        selectionSets.push(selection.selectionSet);
-      }
 
       switch (selection.kind) {
         case Kind.INLINE_FRAGMENT:
           if (
-            selection.typeCondition?.name.value &&
-            iPaths.includes(selection.typeCondition.name.value)
+            selection.typeCondition?.kind === Kind.NAMED_TYPE &&
+            !iPaths.includes(selection.typeCondition.name.value)
+          ) {
+            (selectionSet.selections as SelectionNode[]).splice(i, 1);
+          } else if (
+            "selectionSet" in selection &&
+            selection.selectionSet?.selections
           ) {
             selectionSets.push(selection.selectionSet);
           }
@@ -37,57 +55,40 @@ export default function pick(
         case Kind.FIELD:
           if (!iPaths.includes(selection.name.value)) {
             (selectionSet.selections as SelectionNode[]).splice(i, 1);
+          } else if (
+            "selectionSet" in selection &&
+            selection.selectionSet?.selections
+          ) {
+            selectionSets.push(selection.selectionSet);
           }
           break;
       }
     }
   }
 
-  return document;
+  return operationDefinition;
 }
 
-// removes a field from an object type
-function test1() {
-  const initial = gql`
-    query {
-      user {
-        id
-        name
-      }
-    }
-  `;
-
+// picks a field from an object type
+async function test1() {
   const expected = gql`
     query {
       user {
         name
-        age
       }
     }
   `;
 
-  const result = pick(initial, ["user.name"]);
+  const result = pick(["user.name"]);
 
-  if (!equal(result.definitions, expected.definitions)) {
-    throw new Error("Error");
-  }
+  const expectedResponse = await getResponse(expected);
+  const resultResponse = await getResponse(result);
+
+  return assert.deepEqual(expectedResponse, resultResponse);
 }
 
-// removes a field from an line fragment type
-function test2() {
-  const initial = gql`
-    query {
-      user {
-        organization {
-          ... on Organization {
-            id
-            name
-          }
-        }
-      }
-    }
-  `;
-
+// picks a field from a union type
+async function test2() {
   const expected = gql`
     query {
       user {
@@ -100,21 +101,26 @@ function test2() {
     }
   `;
 
-  const result = pick(initial, ["user.organization.__Organization.name"]);
+  const result = pick(["user.organization.Organization.name"]);
 
-  if (!equal(result.definitions, expected.definitions)) {
-    throw new Error("Error");
-  }
+  const expectedResponse = await getResponse(expected);
+  const resultResponse = await getResponse(result);
+
+  assert.deepEqual(expectedResponse, resultResponse);
 }
 
-[
-  test1, //
-  test2
-].forEach((func) => {
-  try {
-    func();
-    console.log("Success");
-  } catch (e) {
-    console.error("Error");
+try {
+  for (const test of [test1, test2]) {
+    await test();
   }
-});
+  console.log("All tests passed");
+} catch (e) {
+  console.error(e);
+}
+
+function getResponse(ast: ASTNode) {
+  return graphql({
+    schema: schemaWithMocks,
+    source: print(ast)
+  });
+}

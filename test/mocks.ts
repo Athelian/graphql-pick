@@ -3,7 +3,7 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 
 // Fill this in with the schema string
 const typeDefs = `
-  union OrganizationPayload = Organization | BadRequest
+  union OrganizationPayload = BadRequest | Organization
 
   type BadRequest {
     reason: String!
@@ -27,10 +27,37 @@ const typeDefs = `
   }
 `;
 
+const resolver = {
+  Query: {
+    user: () => {
+      return {
+        id: "1",
+        name: "John Doe",
+        organization: {
+          __typename: "Organization",
+          id: "1",
+          name: "Acme Inc."
+        }
+      };
+    }
+  },
+  OrganizationPayload: {
+    __resolveType(obj: any) {
+      return "Organization";
+    }
+  }
+};
+
 // Make a GraphQL schema with no resolvers
-const schema = makeExecutableSchema({ typeDefs });
+export const schema = makeExecutableSchema({
+  typeDefs,
+  resolvers: [resolver],
+  resolverValidationOptions: {
+    requireResolversForResolveType: "error"
+  }
+});
 
 // Create a new schema with mocks
-const schemaWithMocks = addMocksToSchema({ schema });
+const schemaWithMocks = addMocksToSchema({ schema, preserveResolvers: true });
 
 export default schemaWithMocks;
