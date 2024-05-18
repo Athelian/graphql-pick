@@ -2,9 +2,13 @@ import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 
 const typeDefs = `
-  union OrganizationPayload = BadRequest | Organization
+  union OrganizationPayload = BadRequest | Forbidden | Organization
 
   type BadRequest {
+    reason: String!
+  }
+
+  type Forbidden {
     reason: String!
   }
 

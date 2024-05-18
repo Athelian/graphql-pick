@@ -5,6 +5,7 @@ import schemaWithMocks from "./mocks/graphqlMocks";
 import { schema } from "./mocks/graphqlMocks";
 import { getResponse } from "./utils/index";
 import {
+  AmbiguousAntiResolverPatternError,
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "../src/errors";
@@ -60,12 +61,24 @@ describe("pick", () => {
   });
 });
 
-describe("pick with options", () => {
-  beforeAll(() => {
-    initGQLPick(schema, { noResolve: ["BadRequest"] });
+describe("pick with invalid options", () => {
+  it("should throw on initialization with an ambiguous anti resolution pattern", async () => {
+    const myFunction = () => {
+      const spottyAntiResolvePattern = ["BadRequest"]; // it should match `(unionMembers.length) - 1` elements in all cases
+      initGQLPick(schema, { noResolve: spottyAntiResolvePattern });
+    };
+    await expect(myFunction).toThrow(AmbiguousAntiResolverPatternError);
+    await expect(myFunction).toThrow(
+      "The ignore pattern must unambiguously reduce all related unions to one member."
+    );
   });
+});
 
-  it("should pick a field by auto resolution", async () => {
+describe("pick with valid options", () => {
+  beforeAll(() => {
+    initGQLPick(schema, { noResolve: ["BadRequest", "Forbidden"] });
+  });
+  it("should pick a field by auto resolution when supplied with an unambiguous anti resolution pattern", async () => {
     const expected = gql`
       query {
         user {

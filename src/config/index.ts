@@ -1,17 +1,16 @@
 import { GraphQLSchema } from "graphql";
 
-const DEFAULT_SCHEMA = null;
-const DEFAULT_OPTIONS = {};
+import { DEFAULT_OPTIONS, DEFAULT_SCHEMA } from "./constants";
+import { Options } from "./types";
+import { assertValidConfig } from "./validator";
 
 let globalSchema: GraphQLSchema | null = DEFAULT_SCHEMA;
 let globalOptions: Options = DEFAULT_OPTIONS;
 
-interface Options {
-  /** asd */
-  noResolve?: string[];
-}
-
 export function initGQLPick(schema: GraphQLSchema, options?: Options) {
+  if (options) {
+    assertValidConfig(schema, options);
+  }
   globalSchema = schema;
   globalOptions = options || {};
 }
