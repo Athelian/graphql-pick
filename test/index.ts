@@ -37,6 +37,7 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
 
     for (let i = selectionSet.selections.length - 1; i >= 0; i--) {
       let selection = selectionSet.selections[i];
+      let toDelete = false;
 
       switch (selection.kind) {
         case Kind.INLINE_FRAGMENT:
@@ -44,24 +45,23 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
             selection.typeCondition?.kind === Kind.NAMED_TYPE &&
             !iPaths.includes(selection.typeCondition.name.value)
           ) {
-            (selectionSet.selections as SelectionNode[]).splice(i, 1);
-          } else if (
-            "selectionSet" in selection &&
-            selection.selectionSet?.selections
-          ) {
-            selectionSets.push(selection.selectionSet);
+            toDelete = true;
           }
           break;
         case Kind.FIELD:
           if (!iPaths.includes(selection.name.value)) {
-            (selectionSet.selections as SelectionNode[]).splice(i, 1);
-          } else if (
-            "selectionSet" in selection &&
-            selection.selectionSet?.selections
-          ) {
-            selectionSets.push(selection.selectionSet);
+            toDelete = true;
           }
           break;
+      }
+
+      if (toDelete) {
+        (selectionSet.selections as SelectionNode[]).splice(i, 1);
+      } else if (
+        "selectionSet" in selection &&
+        selection.selectionSet?.selections
+      ) {
+        selectionSets.push(selection.selectionSet);
       }
     }
   }
@@ -123,4 +123,8 @@ function getResponse(ast: ASTNode) {
     schema: schemaWithMocks,
     source: print(ast)
   });
+}
+
+function isUnionType(type: any) {
+  return type.astNode?.kind === Kind.UNION_TYPE_DEFINITION;
 }
