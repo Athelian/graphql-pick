@@ -1,0 +1,21 @@
+src/
+
+__tests__/
+*.test.ts
+*.spec.ts
+
+node_modules/
+dist/
+
+tsconfig.json
+
+jest.config.js
+jest.setup.js
+
+.vscode/
+
+# Exclude lock files (optional, some prefer to include these)
+pnpm-lock.yaml
+
+*.log
+.DS_Store

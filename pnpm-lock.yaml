@@ -8,9 +8,9 @@ dependencies:
   '@graphql-toolkit/common':
     specifier: ^0.10.7
     version: 0.10.7(graphql@16.8.1)
-  graphql-tag:
-    specifier: ^2.12.6
-    version: 2.12.6(graphql@16.8.1)
+  graphql:
+    specifier: ^16.8.1
+    version: 16.8.1
 
 devDependencies:
   '@graphql-tools/mock':
@@ -31,9 +31,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.12.12
     version: 20.12.12
-  graphql:
-    specifier: ^16.8.1
-    version: 16.8.1
+  graphql-tag:
+    specifier: ^2.12.6
+    version: 2.12.6(graphql@16.8.1)
   jest:
     specifier: ^29.7.0
     version: 29.7.0(@types/node@20.12.12)
@@ -1675,7 +1675,7 @@ packages:
     dependencies:
       graphql: 16.8.1
       tslib: 2.6.2
-    dev: false
+    dev: true
 
   /graphql-tools@5.0.0(graphql@16.8.1):
     resolution: {integrity: sha512-5zn3vtn//382b7G3Wzz3d5q/sh+f7tVrnxeuhTMTJ7pWJijNqLxH7VEzv8VwXCq19zAzHYEosFHfXiK7qzvk7w==}
