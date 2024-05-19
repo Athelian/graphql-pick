@@ -1,4 +1,4 @@
-import { resetGQLPick } from "./src/config.ts";
+import { resetGQLPick } from "./src/config";
 
 afterEach(() => {
   resetGQLPick();
