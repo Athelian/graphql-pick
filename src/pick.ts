@@ -2,6 +2,7 @@ import { buildOperationNodeForField } from "@graphql-toolkit/common";
 
 import {
   DocumentNode,
+  FragmentDefinitionNode,
   Kind,
   OperationTypeNode,
   SelectionNode,
@@ -24,6 +25,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     kind: OperationTypeNode.QUERY,
     field: "user"
   });
+  let operationFragments: FragmentDefinitionNode[] = [];
 
   const selectionSets = [operationDefinition.selectionSet];
   const fieldPathSplits = fieldPaths.map(splitPath);
@@ -37,8 +39,10 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     const selectionSet = selectionSets.pop() as SelectionSetNode;
 
     if (hasFragmentPath(paths)) {
+      const fragments = configManager.findFragments(paths);
+      operationFragments.push(...fragments);
       (selectionSet.selections as SelectionNode[]).push(
-        ...configManager.composeFragments(paths)
+        ...configManager.composeFragments(fragments)
       );
     }
 
@@ -88,5 +92,5 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     hasFieldSelection = false;
   }
 
-  return configManager.composeDocument(operationDefinition);
+  return configManager.composeDocument(operationDefinition, operationFragments);
 }

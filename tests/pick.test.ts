@@ -132,14 +132,21 @@ describe("pick with anti resolution pattern", () => {
 });
 
 describe("pick with fragments", () => {
-  const fragment = gql`
+  const organizationNameFragment = gql`
     fragment OrganizationName on Organization {
       name
     }
   `;
+  const organizationIdFragment = gql`
+    fragment OrganizationId on Organization {
+      id
+    }
+  `;
 
   beforeAll(() => {
-    init(schema, { fragments: [fragment] });
+    init(schema, {
+      fragments: [organizationNameFragment, organizationIdFragment]
+    });
   });
 
   it("should throw on references to non-existent fragments", async () => {
@@ -159,9 +166,33 @@ describe("pick with fragments", () => {
         }
       }
 
-      ${fragment}
+      ${organizationNameFragment}
     `;
     const result = pick([`user.organization.__fragment_OrganizationName`]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
+  it("should pick a field by two fragment types", async () => {
+    const expected = gql`
+      query {
+        user {
+          organization {
+            ...OrganizationName
+            ...OrganizationId
+          }
+        }
+      }
+
+      ${organizationNameFragment}
+      ${organizationIdFragment}
+    `;
+    const result = pick([
+      "user.organization.__fragment_OrganizationName",
+      "user.organization.__fragment_OrganizationId"
+    ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 

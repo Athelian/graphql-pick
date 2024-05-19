@@ -1,5 +1,6 @@
 import {
   DocumentNode,
+  FragmentDefinitionNode,
   FragmentSpreadNode,
   GraphQLSchema,
   Kind,
@@ -10,7 +11,8 @@ import {
   DocumentUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal";
-import { DEFAULT_OPTIONS, FRAGMENT_DELIMITER } from "./constants";
+import { getFragmentPaths } from "../utils";
+import { DEFAULT_OPTIONS } from "./constants";
 import { parseOptions } from "./parser";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator";
@@ -68,14 +70,17 @@ class ConfigManager {
     return this.document;
   }
 
-  public composeDocument(definition: OperationDefinitionNode) {
+  public composeDocument(
+    definition: OperationDefinitionNode,
+    operationFragments: FragmentDefinitionNode[]
+  ) {
     if (!this.document) {
       throw new DocumentUninitializedError();
     }
 
     return {
       ...this.document,
-      definitions: [...this.document.definitions, definition]
+      definitions: [definition, ...operationFragments]
     };
   }
 
@@ -83,18 +88,17 @@ class ConfigManager {
     if (!this.options.fragments) {
       throw new Error("Fragments are not initialized");
     }
+    const fragmentPaths = getFragmentPaths(paths);
 
-    return this.options.fragments.filter(
-      (f) =>
-        f.name.value ===
-        paths
-          .find((p) => p.startsWith(FRAGMENT_DELIMITER))
-          ?.slice(FRAGMENT_DELIMITER.length)
+    return this.options.fragments.filter((f) =>
+      fragmentPaths.includes(f.name.value)
     );
   }
 
-  public composeFragments(paths: string[]): FragmentSpreadNode[] {
-    return this.findFragments(paths).map((f) => ({
+  public composeFragments(
+    fragments: FragmentDefinitionNode[]
+  ): FragmentSpreadNode[] {
+    return fragments.map((f) => ({
       kind: Kind.FRAGMENT_SPREAD,
       name: {
         kind: Kind.NAME,
