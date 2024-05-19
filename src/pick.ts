@@ -45,9 +45,10 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     const iSelectionSet = selectionSets.pop() as SelectionSetNode;
 
     const isHasFragmentPath = hasFragmentPath(iPaths);
+
     if (isHasFragmentPath) {
       const fragments = configManager.composeFragments(iPaths);
-      (iSelectionSet.selections as SelectionNode[]).push(...fragments);
+      (iSelectionSet.selections as SelectionNode[]) = fragments;
     }
 
     for (let j = iSelectionSet.selections.length - 1; j >= 0; j--) {
@@ -67,11 +68,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
             } else {
               const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
 
-              if (
-                !iHasTypeConditionPath &&
-                !isHasFragmentPath &&
-                iPaths.length
-              ) {
+              if (!iHasTypeConditionPath && !isHasFragmentPath) {
                 throw new UnspecifiedTypeResolverError();
               }
 
