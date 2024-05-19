@@ -9,59 +9,75 @@ import {
   DocumentUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal";
-import { DEFAULT_OPTIONS, DEFAULT_SCHEMA } from "./constants";
+import { DEFAULT_OPTIONS } from "./constants";
 import { parseOptions } from "./parser";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator";
 
-let globalSchema: GraphQLSchema | null = DEFAULT_SCHEMA;
-let globalOptions: ParsedOptions = DEFAULT_OPTIONS;
-let globalDocument: DocumentNode | null = null;
+class ConfigManager {
+  private static instance: ConfigManager;
+  private schema: GraphQLSchema | null = null;
+  private options: ParsedOptions = DEFAULT_OPTIONS;
+  private document: DocumentNode | null = null;
 
-export function init(schema: GraphQLSchema, options?: Options) {
-  globalSchema = schema;
+  private constructor() {}
 
-  if (options) {
-    assertValidConfiguration(schema, options);
-    globalOptions = parseOptions(options as ValidatedOptions);
+  public static getInstance(): ConfigManager {
+    if (!ConfigManager.instance) {
+      ConfigManager.instance = new ConfigManager();
+    }
+    return ConfigManager.instance;
   }
 
-  globalDocument = {
-    kind: Kind.DOCUMENT,
-    definitions: [...(globalOptions?.fragments ?? [])]
-  };
-}
-
-export function reset() {
-  globalSchema = DEFAULT_SCHEMA;
-  globalOptions = DEFAULT_OPTIONS;
-}
-
-export function getSchema() {
-  if (!globalSchema) {
-    throw new SchemaUninitializedError();
-  }
-  return globalSchema;
-}
-
-export function getOptions() {
-  return globalOptions;
-}
-
-export function getDocument() {
-  if (!globalDocument) {
-    throw new DocumentUninitializedError();
-  }
-  return globalDocument;
-}
-
-export function composeDocument(definition: OperationDefinitionNode) {
-  if (!globalDocument) {
-    throw new DocumentUninitializedError();
+  public reset() {
+    this.schema = null;
+    this.options = DEFAULT_OPTIONS;
+    this.document = null;
   }
 
-  return {
-    ...globalDocument,
-    definitions: [...globalDocument.definitions, definition]
-  };
+  public init(schema: GraphQLSchema, options?: Options) {
+    this.schema = schema;
+
+    if (options) {
+      assertValidConfiguration(schema, options);
+      this.options = parseOptions(options as ValidatedOptions);
+    }
+
+    this.document = {
+      kind: Kind.DOCUMENT,
+      definitions: [...(this.options?.fragments ?? [])]
+    };
+  }
+
+  public getSchema() {
+    if (!this.schema) {
+      throw new SchemaUninitializedError();
+    }
+    return this.schema;
+  }
+
+  public getOptions() {
+    return this.options;
+  }
+
+  public getDocument() {
+    if (!this.document) {
+      throw new DocumentUninitializedError();
+    }
+    return this.document;
+  }
+
+  public composeDocument(definition: OperationDefinitionNode) {
+    if (!this.document) {
+      throw new DocumentUninitializedError();
+    }
+
+    return {
+      ...this.document,
+      definitions: [...this.document.definitions, definition]
+    };
+  }
 }
+
+const instance = ConfigManager.getInstance();
+export default instance;

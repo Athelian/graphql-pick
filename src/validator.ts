@@ -1,4 +1,4 @@
-import { getOptions } from "./config";
+import configManager from "./config";
 import {
   UnmatchedFragmentDefinitionError,
   UnspecifiedSelectionsError
@@ -16,7 +16,7 @@ function assertValidSelections(fieldPaths: string[]) {
 }
 
 function assertValidPickedFragments(fieldPaths: string[]) {
-  const options = getOptions();
+  const options = configManager.getOptions();
 
   const pickedFragments = fieldPaths.flatMap((fp) =>
     fp.split(".").filter((p) => p.startsWith("__"))

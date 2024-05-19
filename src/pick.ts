@@ -8,7 +8,7 @@ import {
   SelectionSetNode
 } from "graphql";
 
-import { composeDocument, getOptions, getSchema } from "./config";
+import configManager from "./config";
 import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
@@ -18,8 +18,8 @@ import assertValidPick from "./validator";
 export default function pick(fieldPaths: string[]): DocumentNode {
   assertValidPick(fieldPaths);
 
-  const schema = getSchema();
-  const options = getOptions();
+  const schema = configManager.getSchema();
+  const options = configManager.getOptions();
 
   const operationDefinition = buildOperationNodeForField({
     schema,
@@ -113,5 +113,5 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     hasFieldSelection = false;
   }
 
-  return composeDocument(operationDefinition);
+  return configManager.composeDocument(operationDefinition);
 }
