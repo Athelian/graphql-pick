@@ -132,3 +132,41 @@ describe("pick with noResolve", () => {
     expect(expectedResponse).toEqual(resultResponse);
   });
 });
+
+describe("pick with fragments", () => {
+  const fragment = gql`
+    fragment OrganizationName on Organization {
+      name
+    }
+  `;
+
+  beforeAll(() => {
+    initGQLPick(schema, { fragments: [fragment] });
+  });
+
+  it("should throw on references to non-existent fragments", async () => {
+    const myFunction = () => {
+      pick([`user.organization.__NonExistentFragment`]);
+    };
+    await expect(myFunction).toThrow(Error);
+  });
+
+  it("should pick a field by a fragment type", async () => {
+    const expected = gql`
+      query {
+        user {
+          organization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick([`user.organization.__OrganizationNameFragment`]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(expectedResponse).toEqual(resultResponse);
+  });
+});

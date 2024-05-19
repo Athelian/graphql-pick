@@ -13,8 +13,11 @@ import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "./errors";
+import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): OperationDefinitionNode {
+  assertValidPick(fieldPaths);
+
   const schema = getSchema();
   const options = getOptions();
 
