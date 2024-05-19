@@ -13,7 +13,12 @@ import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "./errors/public";
-import { getSomeFragmentPath, getTypeConditionPaths, splitPath } from "./utils";
+import {
+  getTypeConditionPaths,
+  hasFragmentPath,
+  hasTypeConditionPath,
+  splitPath
+} from "./utils";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
@@ -39,8 +44,8 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     const iPaths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
     const iSelectionSet = selectionSets.pop() as SelectionSetNode;
 
-    const someFragmentPath = getSomeFragmentPath(iPaths);
-    if (someFragmentPath) {
+    const isHasFragmentPath = hasFragmentPath(iPaths);
+    if (isHasFragmentPath) {
       const fragments = configManager.composeFragments(iPaths);
       (iSelectionSet.selections as SelectionNode[]).push(...fragments);
     }
@@ -60,17 +65,22 @@ export default function pick(fieldPaths: string[]): DocumentNode {
                 hold = true;
               }
             } else {
-              const iTypeConditionPaths = getTypeConditionPaths(iPaths);
+              const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
+
               if (
-                !iTypeConditionPaths.length &&
-                iPaths.length &&
-                !someFragmentPath
+                !iHasTypeConditionPath &&
+                !isHasFragmentPath &&
+                iPaths.length
               ) {
                 throw new UnspecifiedTypeResolverError();
               }
-              if (!iTypeConditionPaths.length) {
+
+              if (!iHasTypeConditionPath) {
                 toDelete = true;
               }
+
+              const iTypeConditionPaths = getTypeConditionPaths(iPaths);
+
               if (
                 !iTypeConditionPaths.includes(
                   selection.typeCondition.name.value
