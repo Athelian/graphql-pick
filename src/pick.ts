@@ -30,66 +30,65 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const selectionSets = [operationDefinition.selectionSet];
   const fieldPathSplits = fieldPaths.map(splitPath);
 
-  let i = 0;
+  let level = 0;
+
   while (selectionSets.length) {
     let hasFieldSelection = false;
-    let hold = false;
+    let numSelectionSets = selectionSets.length;
 
-    const paths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
-    const selectionSet = selectionSets.pop() as SelectionSetNode;
+    while (numSelectionSets-- !== 0) {
+      const paths = fieldPathSplits.map((fps) => fps[level]).filter(Boolean);
+      const selectionSet = selectionSets.shift() as SelectionSetNode;
 
-    if (hasFragmentPath(paths)) {
-      const fragments = configManager.findFragments(paths);
-      fragments.forEach((f) => operationFragments.add(f));
-      (selectionSet.selections as SelectionNode[]).push(
-        ...configManager.composeFragments(fragments)
-      );
-    }
-
-    for (let j = selectionSet.selections.length - 1; j >= 0; j--) {
-      let selection = selectionSet.selections[j];
-      let toDelete = false;
-
-      switch (selection.kind) {
-        case Kind.INLINE_FRAGMENT:
-          if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
-            if (options.noResolve) {
-              toDelete = options.noResolve.includes(
-                selection.typeCondition.name.value
-              );
-              hold = toDelete;
-            } else {
-              toDelete = !getTypeConditionPaths(paths).includes(
-                selection.typeCondition.name.value
-              );
-            }
-          }
-          break;
-        case Kind.FIELD:
-          toDelete = !paths.includes(selection.name.value);
-          break;
+      if (hasFragmentPath(paths)) {
+        const fragments = configManager.findFragments(paths);
+        fragments.forEach((f) => operationFragments.add(f));
+        (selectionSet.selections as SelectionNode[]).push(
+          ...configManager.composeFragments(fragments)
+        );
       }
 
-      if (toDelete) {
-        (selectionSet.selections as SelectionNode[]).splice(j, 1);
-      } else {
-        hasFieldSelection = true;
-        if ("selectionSet" in selection && selection.selectionSet?.selections) {
-          selectionSets.push(selection.selectionSet);
+      for (let j = selectionSet.selections.length - 1; j >= 0; j--) {
+        let selection = selectionSet.selections[j];
+        let toDelete = false;
+
+        switch (selection.kind) {
+          case Kind.INLINE_FRAGMENT:
+            if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
+              if (options.noResolve) {
+                toDelete = options.noResolve.includes(
+                  selection.typeCondition.name.value
+                );
+              } else {
+                toDelete = !getTypeConditionPaths(paths).includes(
+                  selection.typeCondition.name.value
+                );
+              }
+            }
+            break;
+          case Kind.FIELD:
+            toDelete = !paths.includes(selection.name.value);
+            break;
+        }
+
+        if (toDelete) {
+          (selectionSet.selections as SelectionNode[]).splice(j, 1);
+        } else {
+          hasFieldSelection = true;
+          if (
+            "selectionSet" in selection &&
+            selection.selectionSet?.selections
+          ) {
+            selectionSets.push(selection.selectionSet);
+          }
         }
       }
     }
+    level++;
 
     if (hasFieldSelection === false) {
       throw new UnspecifiedSelectionsError();
     }
-
-    if (!hold) {
-      i++;
-    }
-
-    hold = false;
-    hasFieldSelection = false;
   }
 
   return configManager.composeDocument(operationDefinition, operationFragments);
