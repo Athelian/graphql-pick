@@ -1,18 +1,20 @@
 import { GraphQLSchema } from "graphql";
 
 import { DEFAULT_OPTIONS, DEFAULT_SCHEMA } from "./constants";
-import { Options } from "./types";
-import { assertValidConfig } from "./validator";
+import { parseOptions } from "./parser";
+import { Options, ParsedOptions } from "./types";
+import { assertValidConfiguration } from "./validator";
 
 let globalSchema: GraphQLSchema | null = DEFAULT_SCHEMA;
-let globalOptions: Options = DEFAULT_OPTIONS;
+let globalOptions: ParsedOptions = DEFAULT_OPTIONS;
 
 export function initGQLPick(schema: GraphQLSchema, options?: Options) {
-  if (options) {
-    assertValidConfig(schema, options);
-  }
   globalSchema = schema;
-  globalOptions = options || {};
+
+  if (options) {
+    assertValidConfiguration(schema, options);
+    globalOptions = parseOptions(options);
+  }
 }
 
 export function getSchema() {

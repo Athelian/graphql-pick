@@ -1,12 +1,31 @@
-import { GraphQLSchema } from "graphql";
+import { GraphQLSchema, Kind } from "graphql";
 
-import { Options } from "./types";
 import { AmbiguousAntiResolverPatternError } from "../errors";
+import { Options } from "./types";
 
-export function assertValidConfig(schema: GraphQLSchema, options: Options) {
+export function assertValidConfiguration(
+  schema: GraphQLSchema,
+  options: Options
+) {
+  if (options.fragments) {
+    assertValidFragments(schema, options.fragments);
+  }
   if (options.noResolve) {
     assertValidAntiResolvePattern(schema, options.noResolve);
   }
+}
+
+function assertValidFragments(
+  schema: GraphQLSchema,
+  fragments: NonNullable<Options["fragments"]>
+) {
+  fragments.forEach((f) =>
+    f.definitions.forEach((d) => {
+      if (d.kind !== Kind.FRAGMENT_DEFINITION) {
+        throw new Error("Invalid fragment definition");
+      }
+    })
+  );
 }
 
 function assertValidAntiResolvePattern(
