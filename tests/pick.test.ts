@@ -3,8 +3,7 @@ import gql from "graphql-tag";
 import pick, { initGQLPick as init, resetGQLPick as reset } from "../";
 import {
   AmbiguousAntiResolverPatternError,
-  UnspecifiedSelectionsError,
-  UnspecifiedTypeResolverError
+  UnspecifiedSelectionsError
 } from "../src/errors/public";
 import schemaWithMocks, { schema } from "./mocks/graphql";
 import { getResponse } from "./utils/index";
@@ -55,8 +54,8 @@ describe("pick without options", () => {
 
   it("should throw if no type resolution is specified", async () => {
     const myFunction = () => pick(["user.organization.name"]);
-    await expect(myFunction).toThrow(UnspecifiedTypeResolverError);
-    await expect(myFunction).toThrow("Missing type resolution for union type.");
+    await expect(myFunction).toThrow(UnspecifiedSelectionsError);
+    await expect(myFunction).toThrow("Missing selection in field path.");
   });
 });
 

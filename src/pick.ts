@@ -9,16 +9,8 @@ import {
 } from "graphql";
 
 import configManager from "./config";
-import {
-  UnspecifiedSelectionsError,
-  UnspecifiedTypeResolverError
-} from "./errors/public";
-import {
-  getTypeConditionPaths,
-  hasFragmentPath,
-  hasTypeConditionPath,
-  splitPath
-} from "./utils";
+import { UnspecifiedSelectionsError } from "./errors/public";
+import { getTypeConditionPaths, hasFragmentPath, splitPath } from "./utils";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
@@ -43,17 +35,10 @@ export default function pick(fieldPaths: string[]): DocumentNode {
 
     const iPaths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
     const iSelectionSet = selectionSets.pop() as SelectionSetNode;
-
-    const isHasFragmentPath = hasFragmentPath(iPaths);
-
-    if (isHasFragmentPath) {
-      const fragments = configManager.composeFragments(iPaths);
-      (iSelectionSet.selections as SelectionNode[]).push(...fragments);
-    }
-
-    const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
-    if (!options.noResolve && !iHasTypeConditionPath && !hasFragmentPath) {
-      throw new UnspecifiedTypeResolverError();
+    if (hasFragmentPath(iPaths)) {
+      (iSelectionSet.selections as SelectionNode[]).push(
+        ...configManager.composeFragments(iPaths)
+      );
     }
 
     for (let j = iSelectionSet.selections.length - 1; j >= 0; j--) {
