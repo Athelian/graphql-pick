@@ -36,6 +36,12 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     const paths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
     const selectionSet = selectionSets.pop() as SelectionSetNode;
 
+    if (hasFragmentPath(paths)) {
+      (selectionSet.selections as SelectionNode[]).push(
+        ...configManager.composeFragments(paths)
+      );
+    }
+
     for (let j = selectionSet.selections.length - 1; j >= 0; j--) {
       let selection = selectionSet.selections[j];
       let toDelete = false;
@@ -58,13 +64,6 @@ export default function pick(fieldPaths: string[]): DocumentNode {
         case Kind.FIELD:
           toDelete = !paths.includes(selection.name.value);
           break;
-      }
-
-      if (hasFragmentPath(paths)) {
-        hasFieldSelection = true;
-        (selectionSet.selections as SelectionNode[]).push(
-          ...configManager.composeFragments(paths)
-        );
       }
 
       if (toDelete) {
