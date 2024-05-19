@@ -1,5 +1,6 @@
 import {
   DocumentNode,
+  FragmentSpreadNode,
   GraphQLSchema,
   Kind,
   OperationDefinitionNode
@@ -9,7 +10,7 @@ import {
   DocumentUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal";
-import { DEFAULT_OPTIONS, TYPE_CONDITION_DELIMITER } from "./constants";
+import { DEFAULT_OPTIONS, FRAGMENT_DELIMITER } from "./constants";
 import { parseOptions } from "./parser";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator";
@@ -78,18 +79,29 @@ class ConfigManager {
     };
   }
 
-  public findFragment(paths: string[]) {
+  public findFragments(paths: string[]) {
     if (!this.options.fragments) {
-      return undefined;
+      throw new Error("Fragments are not initialized");
     }
 
-    return this.options.fragments.find(
+    return this.options.fragments.filter(
       (f) =>
         f.name.value ===
         paths
-          .find((p) => p.startsWith(TYPE_CONDITION_DELIMITER))
-          ?.slice(TYPE_CONDITION_DELIMITER.length)
+          .find((p) => p.startsWith(FRAGMENT_DELIMITER))
+          ?.slice(FRAGMENT_DELIMITER.length)
     );
+  }
+
+  public composeFragments(paths: string[]): FragmentSpreadNode[] {
+    return this.findFragments(paths).map((f) => ({
+      kind: Kind.FRAGMENT_SPREAD,
+      name: {
+        kind: Kind.NAME,
+        value: f.name.value
+      },
+      directives: []
+    }));
   }
 }
 
