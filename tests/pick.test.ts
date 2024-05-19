@@ -158,6 +158,39 @@ describe("pick with anti resolution pattern", () => {
   });
 });
 
+describe("pick with circularReferenceDepth", () => {
+  beforeAll(() => {
+    init(schema, { circularReferenceDepth: 2 });
+  });
+  it("should pick a field on a circular reference", async () => {
+    const expected = gql`
+      query {
+        user {
+          organization {
+            ... on Organization {
+              users {
+                organization {
+                  ... on Organization {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const result = pick([
+      "user.organization.__on_Organization.users.organization.__on_Organization.name"
+    ]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+});
+
 describe("pick with fragment definitions", () => {
   const organizationNameFragment = gql`
     fragment OrganizationName on Organization {
@@ -231,64 +264,4 @@ describe("pick with fragment definitions", () => {
 
     expect(resultResponse).toEqual(expectedResponse);
   });
-
-  // it("should pick fields by two of the same fragment definition", async () => {
-  //   init(schema, { fragments: [organizationNameFragment] });
-
-  //   const expected = gql`
-  //     query {
-  //       user {
-  //         organization {
-  //           ...OrganizationName
-  //         }
-  //         previousOrganization {
-  //           ...OrganizationName
-  //         }
-  //       }
-  //     }
-
-  //     ${organizationNameFragment}
-  //   `;
-
-  //   const result = pick([
-  //     "user.organization.__fragment_OrganizationName",
-  //     "user.previousOrganization.__fragment_OrganizationName"
-  //   ]);
-  //   const expectedResponse = await getResponse(schemaWithMocks, expected);
-  //   const resultResponse = await getResponse(schemaWithMocks, result);
-
-  //   expect(resultResponse).toEqual(expectedResponse);
-  // });
-
-  // it("should pick a field by two of the same fragment types", async () => {
-  //   init(schema, { fragments: [organizationNameFragment] });
-
-  //   const expected = gql`
-  //     query {
-  //       user {
-  //         organization {
-  //           ...OrganizationName
-  //           ... on Organization {
-  //             users {
-  //               organization {
-  //                 ...OrganizationName
-  //               }
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     ${organizationNameFragment}
-  //   `;
-
-  //   const result = pick([
-  //     "user.organization.__fragment_OrganizationName",
-  //     "user.organization.__on_Organization.users.organization.__fragment_OrganizationName"
-  //   ]);
-  //   const expectedResponse = await getResponse(schemaWithMocks, expected);
-  //   const resultResponse = await getResponse(schemaWithMocks, result);
-
-  //   expect(resultResponse).toEqual(expectedResponse);
-  // });
 });

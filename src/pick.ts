@@ -23,6 +23,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const operationDefinition = buildOperationNodeForField({
     schema,
     kind: OperationTypeNode.QUERY,
+    circularReferenceDepth: options.circularReferenceDepth,
     field: "user"
   });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();

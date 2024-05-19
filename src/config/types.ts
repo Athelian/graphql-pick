@@ -3,6 +3,7 @@ import { DocumentNode, FragmentDefinitionNode } from "graphql";
 type TransformedOptionKeys = keyof Pick<Options, "fragments">;
 
 export interface Options {
+  circularReferenceDepth?: number;
   fragments?: DocumentNode[];
   /**
    * Ignore pattern for resolving type unions. You must
