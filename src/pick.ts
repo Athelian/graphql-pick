@@ -52,11 +52,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     }
 
     const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
-    if (
-      !options.noResolve &&
-      !iHasTypeConditionPath &&
-      iSelectionSet.selections.every((s) => s.kind === Kind.INLINE_FRAGMENT)
-    ) {
+    if (!options.noResolve && !iHasTypeConditionPath && !hasFragmentPath) {
       throw new UnspecifiedTypeResolverError();
     }
 
