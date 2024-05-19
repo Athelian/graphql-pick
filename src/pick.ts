@@ -33,50 +33,42 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     let hasFieldSelection = false;
     let hold = false;
 
-    const iPaths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
-    const iSelectionSet = selectionSets.pop() as SelectionSetNode;
-    if (hasFragmentPath(iPaths)) {
-      (iSelectionSet.selections as SelectionNode[]).push(
-        ...configManager.composeFragments(iPaths)
-      );
-    }
+    const paths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
+    const selectionSet = selectionSets.pop() as SelectionSetNode;
 
-    for (let j = iSelectionSet.selections.length - 1; j >= 0; j--) {
-      let selection = iSelectionSet.selections[j];
+    for (let j = selectionSet.selections.length - 1; j >= 0; j--) {
+      let selection = selectionSet.selections[j];
       let toDelete = false;
 
       switch (selection.kind) {
         case Kind.INLINE_FRAGMENT:
           if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
             if (options.noResolve) {
-              if (
-                options.noResolve.includes(selection.typeCondition.name.value)
-              ) {
-                toDelete = true;
-                hold = true;
-              }
+              toDelete = options.noResolve.includes(
+                selection.typeCondition.name.value
+              );
+              hold = toDelete;
             } else {
-              const iTypeConditionPaths = getTypeConditionPaths(iPaths);
-
-              if (
-                !iTypeConditionPaths.includes(
-                  selection.typeCondition.name.value
-                )
-              ) {
-                toDelete = true;
-              }
+              toDelete = !getTypeConditionPaths(paths).includes(
+                selection.typeCondition.name.value
+              );
             }
           }
           break;
         case Kind.FIELD:
-          if (!iPaths.includes(selection.name.value)) {
-            toDelete = true;
-          }
+          toDelete = !paths.includes(selection.name.value);
           break;
       }
 
+      if (hasFragmentPath(paths)) {
+        hasFieldSelection = true;
+        (selectionSet.selections as SelectionNode[]).push(
+          ...configManager.composeFragments(paths)
+        );
+      }
+
       if (toDelete) {
-        (iSelectionSet.selections as SelectionNode[]).splice(j, 1);
+        (selectionSet.selections as SelectionNode[]).splice(j, 1);
       } else {
         hasFieldSelection = true;
         if ("selectionSet" in selection && selection.selectionSet?.selections) {
