@@ -1,39 +1,45 @@
 import {
-  DefinitionNode,
   DocumentNode,
-  FragmentDefinitionNode,
   GraphQLSchema,
-  Kind
+  Kind,
+  OperationDefinitionNode
 } from "graphql";
 
+import {
+  DocumentUninitializedError,
+  SchemaUninitializedError
+} from "../errors/internal";
 import { DEFAULT_OPTIONS, DEFAULT_SCHEMA } from "./constants";
 import { parseOptions } from "./parser";
-import { Options, ParsedOptions } from "./types";
+import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator";
 
 let globalSchema: GraphQLSchema | null = DEFAULT_SCHEMA;
-let globalDocument: DocumentNode | null = null;
 let globalOptions: ParsedOptions = DEFAULT_OPTIONS;
+let globalDocument: DocumentNode | null = null;
 
-export function initGQLPick(schema: GraphQLSchema, options?: Options) {
+export function init(schema: GraphQLSchema, options?: Options) {
   globalSchema = schema;
 
   if (options) {
     assertValidConfiguration(schema, options);
-    globalOptions = parseOptions(options);
+    globalOptions = parseOptions(options as ValidatedOptions);
   }
 
   globalDocument = {
     kind: Kind.DOCUMENT,
-    definitions: [
-      ...(globalOptions?.fragments ?? [])
-    ] as readonly FragmentDefinitionNode[]
+    definitions: [...(globalOptions?.fragments ?? [])]
   };
+}
+
+export function reset() {
+  globalSchema = DEFAULT_SCHEMA;
+  globalOptions = DEFAULT_OPTIONS;
 }
 
 export function getSchema() {
   if (!globalSchema) {
-    throw new Error("Pick not initialized. Please call initSchema() first.");
+    throw new SchemaUninitializedError();
   }
   return globalSchema;
 }
@@ -44,23 +50,18 @@ export function getOptions() {
 
 export function getDocument() {
   if (!globalDocument) {
-    throw new Error("Pick not initialized. Please call initSchema() first.");
+    throw new DocumentUninitializedError();
   }
   return globalDocument;
 }
 
-export function composeDocument(definition: DefinitionNode) {
+export function composeDocument(definition: OperationDefinitionNode) {
   if (!globalDocument) {
-    throw new Error("Pick not initialized. Please call initSchema() first.");
+    throw new DocumentUninitializedError();
   }
 
   return {
     ...globalDocument,
     definitions: [...globalDocument.definitions, definition]
   };
-}
-
-export function resetGQLPick() {
-  globalSchema = DEFAULT_SCHEMA;
-  globalOptions = DEFAULT_OPTIONS;
 }

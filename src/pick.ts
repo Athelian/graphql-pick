@@ -12,7 +12,7 @@ import { composeDocument, getOptions, getSchema } from "./config";
 import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
-} from "./errors";
+} from "./errors/public";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {

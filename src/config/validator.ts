@@ -1,6 +1,9 @@
 import { GraphQLSchema, Kind } from "graphql";
 
-import { AmbiguousAntiResolverPatternError } from "../errors";
+import {
+  AmbiguousAntiResolverPatternError,
+  ImpureFragmentDefinitionsError
+} from "../errors/public";
 import { Options } from "./types";
 
 export function assertValidConfiguration(
@@ -22,7 +25,7 @@ function assertValidFragments(
   fragments.forEach((f) =>
     f.definitions.forEach((d) => {
       if (d.kind !== Kind.FRAGMENT_DEFINITION) {
-        throw new Error("Invalid fragment definition");
+        throw new ImpureFragmentDefinitionsError();
       }
     })
   );
@@ -33,12 +36,17 @@ function assertValidAntiResolvePattern(
   noResolve: NonNullable<Options["noResolve"]>
 ) {
   for (const type of Object.values(schema.getTypeMap())) {
-    if (!("getTypes" in type)) return;
+    if (!("getTypes" in type)) {
+      return;
+    }
 
     const typeMap = type.getTypes();
     const resolves = typeMap.filter(({ name }) => !noResolve.includes(name));
 
-    if (resolves.length === typeMap.length) return; // no match is considered valid
+    if (resolves.length === typeMap.length) {
+      return; // no match is considered valid
+    }
+
     if (resolves.length !== 1) {
       throw new AmbiguousAntiResolverPatternError();
     }

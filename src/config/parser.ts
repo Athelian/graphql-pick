@@ -1,17 +1,19 @@
-import { FragmentDefinitionNode, Kind } from "graphql";
-import { Options, ParsedOptions } from "./types";
+import { ParsedOptions, ValidatedOptions } from "./types";
 
-export function parseOptions(options: Options): ParsedOptions {
+export function parseOptions(options: ValidatedOptions): ParsedOptions {
+  if (options.fragments) {
+    return {
+      ...options,
+      fragments: parseFragments(options.fragments)
+    };
+  }
+
   return {
     ...options,
-    fragments: options.fragments ? parseFragments(options.fragments) : undefined
+    fragments: []
   };
 }
 
-function parseFragments(fragments: NonNullable<Options["fragments"]>) {
-  return fragments.flatMap((f) =>
-    f.definitions.filter((d): d is FragmentDefinitionNode => {
-      return d.kind === Kind.FRAGMENT_DEFINITION;
-    })
-  );
+function parseFragments(fragments: NonNullable<ValidatedOptions["fragments"]>) {
+  return fragments.flatMap((f) => f.definitions);
 }

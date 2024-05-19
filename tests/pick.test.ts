@@ -1,18 +1,17 @@
 import gql from "graphql-tag";
 
-import pick, { initGQLPick } from "../";
-import { resetGQLPick } from "../src/config";
+import pick, { initGQLPick as init, resetGQLPick as reset } from "../";
 import {
   AmbiguousAntiResolverPatternError,
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
-} from "../src/errors";
+} from "../src/errors/public";
 import schemaWithMocks, { schema } from "./mocks/graphqlMocks";
 import { getResponse } from "./utils/index";
 
 describe("pick", () => {
   beforeAll(() => {
-    initGQLPick(schema);
+    init(schema);
   });
 
   it("should pick a field from an object type", async () => {
@@ -63,13 +62,13 @@ describe("pick", () => {
 
 describe("pick with invalid options", () => {
   afterAll(() => {
-    resetGQLPick();
+    reset();
   });
 
   it("should throw on initialization with an ambiguous anti resolution pattern", async () => {
     const myFunction = () => {
       const spottyAntiResolvePattern = ["BadRequest"]; // it should match `(unionMembers.length) - 1` elements in all cases
-      initGQLPick(schema, { noResolve: spottyAntiResolvePattern });
+      init(schema, { noResolve: spottyAntiResolvePattern });
     };
     await expect(myFunction).toThrow(AmbiguousAntiResolverPatternError);
     await expect(myFunction).toThrow(
@@ -86,7 +85,7 @@ describe("pick with invalid options", () => {
           }
         }
       `;
-      initGQLPick(schema, { fragments: [invalidFragment] });
+      init(schema, { fragments: [invalidFragment] });
     };
     await expect(myFunction).toThrow(Error);
   });
@@ -103,15 +102,15 @@ describe("pick with invalid options", () => {
           }
         }
       `;
-      initGQLPick(schema, { fragments: [invalidFragment] });
+      init(schema, { fragments: [invalidFragment] });
     };
     await expect(myFunction).toThrow(Error);
   });
 });
 
-describe("pick with noResolve", () => {
+describe("pick with anti resolution pattern", () => {
   beforeAll(() => {
-    initGQLPick(schema, { noResolve: ["BadRequest", "Forbidden"] });
+    init(schema, { noResolve: ["BadRequest", "Forbidden"] });
   });
   it("should pick a field by auto resolution when supplied with an unambiguous anti resolution pattern", async () => {
     const expected = gql`
@@ -141,7 +140,7 @@ describe("pick with fragments", () => {
   `;
 
   beforeAll(() => {
-    initGQLPick(schema, { fragments: [fragment] });
+    init(schema, { fragments: [fragment] });
   });
 
   it("should throw on references to non-existent fragments", async () => {

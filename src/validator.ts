@@ -1,4 +1,8 @@
-import { getOptions, getSchema } from "./config";
+import { getOptions } from "./config";
+import {
+  UnmatchedFragmentDefinitionError,
+  UnspecifiedSelectionsError
+} from "./errors/public";
 
 export default function assertValidPick(fieldPaths: string[]) {
   assertValidSelections(fieldPaths);
@@ -7,12 +11,11 @@ export default function assertValidPick(fieldPaths: string[]) {
 
 function assertValidSelections(fieldPaths: string[]) {
   if (!fieldPaths.length) {
-    throw new Error();
+    throw new UnspecifiedSelectionsError();
   }
 }
 
 function assertValidPickedFragments(fieldPaths: string[]) {
-  const schema = getSchema();
   const options = getOptions();
 
   const pickedFragments = fieldPaths.flatMap((fp) =>
@@ -24,12 +27,12 @@ function assertValidPickedFragments(fieldPaths: string[]) {
   }
 
   if (!options.fragments) {
-    throw new Error();
+    throw new UnmatchedFragmentDefinitionError();
   }
 
   const loadedFragments = options.fragments.map((f) => f.name.value);
 
   if (!pickedFragments.some((pf) => loadedFragments.includes(pf.slice(2)))) {
-    throw new Error();
+    throw new UnmatchedFragmentDefinitionError();
   }
 }
