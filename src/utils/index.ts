@@ -24,6 +24,10 @@ export function parseTypeConditionPath(path: string) {
   return path.slice(TYPE_CONDITION_DELIMITER.length);
 }
 
+export function getTypeConditionPath(path: string) {
+  return isTypeConditionPath(path) ? parseTypeConditionPath(path) : null;
+}
+
 export function getTypeConditionPaths(paths: string[]) {
   return paths.filter(isTypeConditionPath).map(parseTypeConditionPath);
 }

@@ -72,7 +72,7 @@ class ConfigManager {
 
   public composeDocument(
     definition: OperationDefinitionNode,
-    operationFragments: FragmentDefinitionNode[]
+    operationFragments: Set<FragmentDefinitionNode>
   ) {
     if (!this.document) {
       throw new DocumentUninitializedError();

@@ -15,6 +15,7 @@ const typeDefs = `
   type Organization {
     id: ID!
     name: String!
+    users: [User]
   }
 
   type User {
@@ -22,6 +23,7 @@ const typeDefs = `
     name: String!
     age: Int
     organization: OrganizationPayload
+    previousOrganization: OrganizationPayload
   }
 
   type Query {
@@ -37,6 +39,22 @@ const resolver = {
         id: "1",
         name: "John Doe",
         organization: {
+          __typename: "Organization",
+          id: "1",
+          name: "Acme Inc.",
+          users: [
+            {
+              id: "1",
+              name: "John Doe",
+              organization: {
+                __typename: "Organization",
+                id: "1",
+                name: "Acme Inc."
+              }
+            }
+          ]
+        },
+        previousOrganization: {
           __typename: "Organization",
           id: "1",
           name: "Acme Inc."

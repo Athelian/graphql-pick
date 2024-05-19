@@ -25,7 +25,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     kind: OperationTypeNode.QUERY,
     field: "user"
   });
-  let operationFragments: FragmentDefinitionNode[] = [];
+  let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
   const selectionSets = [operationDefinition.selectionSet];
   const fieldPathSplits = fieldPaths.map(splitPath);
@@ -40,7 +40,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
 
     if (hasFragmentPath(paths)) {
       const fragments = configManager.findFragments(paths);
-      operationFragments.push(...fragments);
+      fragments.forEach((f) => operationFragments.add(f));
       (selectionSet.selections as SelectionNode[]).push(
         ...configManager.composeFragments(fragments)
       );
