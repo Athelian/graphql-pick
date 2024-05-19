@@ -29,9 +29,7 @@ function assertValidPickedFragments(fieldPaths: string[]) {
 
   const loadedFragments = options.fragments.map((f) => f.name.value);
 
-  if (
-    loadedFragments.some((lf) => pickedFragments.some((pf) => pf.includes(lf)))
-  ) {
+  if (!pickedFragments.some((pf) => loadedFragments.includes(pf.slice(2)))) {
     throw new Error();
   }
 }

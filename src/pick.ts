@@ -1,21 +1,21 @@
 import { buildOperationNodeForField } from "@graphql-toolkit/common";
 
 import {
+  DocumentNode,
   Kind,
-  OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
   SelectionSetNode
 } from "graphql";
 
-import { getOptions, getSchema } from "./config";
+import { composeDocument, getOptions, getSchema } from "./config";
 import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "./errors";
 import assertValidPick from "./validator";
 
-export default function pick(fieldPaths: string[]): OperationDefinitionNode {
+export default function pick(fieldPaths: string[]): DocumentNode {
   assertValidPick(fieldPaths);
 
   const schema = getSchema();
@@ -38,7 +38,24 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
     let walkBack = false;
 
     const iPaths = fieldPathSplits.map((fps) => fps[i]);
+    const fragment = options.fragments?.find(
+      (f) => f.name.value === iPaths.find((p) => p.startsWith("__"))?.slice(2)
+    );
     const selectionSet = selectionSets.pop() as SelectionSetNode;
+
+    if (fragment) {
+      selectionSet.selections = [
+        {
+          kind: Kind.FRAGMENT_SPREAD,
+          name: {
+            kind: Kind.NAME,
+            value: fragment.name.value
+          },
+          directives: []
+        }
+      ];
+      continue;
+    }
 
     for (let i = selectionSet.selections.length - 1; i >= 0; i--) {
       let selection = selectionSet.selections[i];
@@ -96,5 +113,5 @@ export default function pick(fieldPaths: string[]): OperationDefinitionNode {
     hasFieldSelection = false;
   }
 
-  return operationDefinition;
+  return composeDocument(operationDefinition);
 }

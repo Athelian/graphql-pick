@@ -28,7 +28,7 @@ describe("pick", () => {
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
-    expect(expectedResponse).toEqual(resultResponse);
+    expect(resultResponse).toEqual(expectedResponse);
   });
 
   it("should throw if no selections are found in fieldPaths", async () => {
@@ -51,7 +51,7 @@ describe("pick", () => {
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
-    expect(expectedResponse).toEqual(resultResponse);
+    expect(resultResponse).toEqual(expectedResponse);
   });
 
   it("should throw if no type resolution is specified", async () => {
@@ -129,7 +129,7 @@ describe("pick with noResolve", () => {
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
-    expect(expectedResponse).toEqual(resultResponse);
+    expect(resultResponse).toEqual(expectedResponse);
   });
 });
 
@@ -156,17 +156,17 @@ describe("pick with fragments", () => {
       query {
         user {
           organization {
-            ... on Organization {
-              name
-            }
+            ...OrganizationName
           }
         }
       }
+
+      ${fragment}
     `;
-    const result = pick([`user.organization.__OrganizationNameFragment`]);
+    const result = pick([`user.organization.__OrganizationName`]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
-    expect(expectedResponse).toEqual(resultResponse);
+    expect(resultResponse).toEqual(expectedResponse);
   });
 });
