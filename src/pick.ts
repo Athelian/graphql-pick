@@ -48,7 +48,16 @@ export default function pick(fieldPaths: string[]): DocumentNode {
 
     if (isHasFragmentPath) {
       const fragments = configManager.composeFragments(iPaths);
-      (iSelectionSet.selections as SelectionNode[]) = fragments;
+      (iSelectionSet.selections as SelectionNode[]).push(...fragments);
+    }
+
+    const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
+    if (
+      !options.noResolve &&
+      !iHasTypeConditionPath &&
+      iSelectionSet.selections.every((s) => s.kind === Kind.INLINE_FRAGMENT)
+    ) {
+      throw new UnspecifiedTypeResolverError();
     }
 
     for (let j = iSelectionSet.selections.length - 1; j >= 0; j--) {
@@ -66,16 +75,6 @@ export default function pick(fieldPaths: string[]): DocumentNode {
                 hold = true;
               }
             } else {
-              const iHasTypeConditionPath = hasTypeConditionPath(iPaths);
-
-              if (!iHasTypeConditionPath && !isHasFragmentPath) {
-                throw new UnspecifiedTypeResolverError();
-              }
-
-              if (!iHasTypeConditionPath) {
-                toDelete = true;
-              }
-
               const iTypeConditionPaths = getTypeConditionPaths(iPaths);
 
               if (
