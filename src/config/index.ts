@@ -9,7 +9,7 @@ import {
   DocumentUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal";
-import { DEFAULT_OPTIONS } from "./constants";
+import { DEFAULT_OPTIONS, TYPE_CONDITION_DELIMITER } from "./constants";
 import { parseOptions } from "./parser";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator";
@@ -76,6 +76,20 @@ class ConfigManager {
       ...this.document,
       definitions: [...this.document.definitions, definition]
     };
+  }
+
+  public findFragment(paths: string[]) {
+    if (!this.options.fragments) {
+      return undefined;
+    }
+
+    return this.options.fragments.find(
+      (f) =>
+        f.name.value ===
+        paths
+          .find((p) => p.startsWith(TYPE_CONDITION_DELIMITER))
+          ?.slice(TYPE_CONDITION_DELIMITER.length)
+    );
   }
 }
 

@@ -6,10 +6,10 @@ import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "../src/errors/public";
-import schemaWithMocks, { schema } from "./mocks/graphqlMocks";
+import schemaWithMocks, { schema } from "./mocks/graphql";
 import { getResponse } from "./utils/index";
 
-describe("pick", () => {
+describe("pick without options", () => {
   beforeAll(() => {
     init(schema);
   });
@@ -46,7 +46,7 @@ describe("pick", () => {
         }
       }
     `;
-    const result = pick(["user.organization.Organization.name"]);
+    const result = pick(["user.organization.__on_Organization.name"]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
@@ -145,7 +145,7 @@ describe("pick with fragments", () => {
 
   it("should throw on references to non-existent fragments", async () => {
     const myFunction = () => {
-      pick([`user.organization.__NonExistentFragment`]);
+      pick([`user.organization.__on_NonExistentFragment`]);
     };
     await expect(myFunction).toThrow(Error);
   });
@@ -162,7 +162,7 @@ describe("pick with fragments", () => {
 
       ${fragment}
     `;
-    const result = pick([`user.organization.__OrganizationName`]);
+    const result = pick([`user.organization.__fragment_OrganizationName`]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 

@@ -2,6 +2,7 @@ import { buildOperationNodeForField } from "@graphql-toolkit/common";
 
 import {
   DocumentNode,
+  FragmentDefinitionNode,
   Kind,
   OperationTypeNode,
   SelectionNode,
@@ -13,6 +14,7 @@ import {
   UnspecifiedSelectionsError,
   UnspecifiedTypeResolverError
 } from "./errors/public";
+import { getSomeFragmentPath, getTypeConditionPaths, splitPath } from "./utils";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
@@ -30,21 +32,22 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   if (!("selectionSet" in operationDefinition)) return operationDefinition;
 
   const selectionSets = [operationDefinition.selectionSet];
-  const fieldPathSplits = fieldPaths.map((fp) => fp.split("."));
+  const fieldPathSplits = fieldPaths.map(splitPath);
 
   let i = 0;
   while (selectionSets.length) {
     let hasFieldSelection = false;
-    let walkBack = false;
+    let repeat = false;
 
-    const iPaths = fieldPathSplits.map((fps) => fps[i]);
-    const fragment = options.fragments?.find(
-      (f) => f.name.value === iPaths.find((p) => p.startsWith("__"))?.slice(2)
-    );
-    const selectionSet = selectionSets.pop() as SelectionSetNode;
+    const iPaths = fieldPathSplits.map((fps) => fps[i]).filter(Boolean);
+    const iSelectionSet = selectionSets.pop() as SelectionSetNode;
 
-    if (fragment) {
-      selectionSet.selections = [
+    const fragmentPath = getSomeFragmentPath(iPaths);
+    if (fragmentPath) {
+      const fragment = options.fragments?.find(
+        (f) => f.name.value === fragmentPath
+      ) as FragmentDefinitionNode; // already validated
+      iSelectionSet.selections = [
         {
           kind: Kind.FRAGMENT_SPREAD,
           name: {
@@ -57,8 +60,8 @@ export default function pick(fieldPaths: string[]): DocumentNode {
       continue;
     }
 
-    for (let i = selectionSet.selections.length - 1; i >= 0; i--) {
-      let selection = selectionSet.selections[i];
+    for (let i = iSelectionSet.selections.length - 1; i >= 0; i--) {
+      let selection = iSelectionSet.selections[i];
       let toDelete = false;
 
       switch (selection.kind) {
@@ -69,16 +72,18 @@ export default function pick(fieldPaths: string[]): DocumentNode {
                 options.noResolve.includes(selection.typeCondition.name.value)
               ) {
                 toDelete = true;
-                walkBack = true;
+                repeat = true;
               }
             } else {
-              const iPathTypeSelections = iPaths.filter(
-                (p) => p[0] === p[0].toUpperCase()
-              );
-              if (!iPathTypeSelections.length) {
+              const iTypeConditionPaths = getTypeConditionPaths(iPaths);
+              if (!iTypeConditionPaths.length) {
                 throw new UnspecifiedTypeResolverError();
               }
-              if (!iPaths.includes(selection.typeCondition.name.value)) {
+              if (
+                !iTypeConditionPaths.includes(
+                  selection.typeCondition.name.value
+                )
+              ) {
                 toDelete = true;
               }
             }
@@ -92,7 +97,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
       }
 
       if (toDelete) {
-        (selectionSet.selections as SelectionNode[]).splice(i, 1);
+        (iSelectionSet.selections as SelectionNode[]).splice(i, 1);
       } else {
         hasFieldSelection = true;
         if ("selectionSet" in selection && selection.selectionSet?.selections) {
@@ -105,11 +110,11 @@ export default function pick(fieldPaths: string[]): DocumentNode {
       throw new UnspecifiedSelectionsError();
     }
 
-    if (!walkBack) {
+    if (!repeat) {
       i++;
     }
 
-    walkBack = false;
+    repeat = false;
     hasFieldSelection = false;
   }
 

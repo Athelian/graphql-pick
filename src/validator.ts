@@ -3,6 +3,7 @@ import {
   UnmatchedFragmentDefinitionError,
   UnspecifiedSelectionsError
 } from "./errors/public";
+import { getFragmentPaths } from "./utils";
 
 export default function assertValidPick(fieldPaths: string[]) {
   assertValidSelections(fieldPaths);
@@ -18,11 +19,9 @@ function assertValidSelections(fieldPaths: string[]) {
 function assertValidPickedFragments(fieldPaths: string[]) {
   const options = configManager.getOptions();
 
-  const pickedFragments = fieldPaths.flatMap((fp) =>
-    fp.split(".").filter((p) => p.startsWith("__"))
-  );
+  const fragmentPaths = getFragmentPaths(fieldPaths).flat();
 
-  if (!pickedFragments.length) {
+  if (!fragmentPaths.length) {
     return;
   }
 
@@ -30,9 +29,8 @@ function assertValidPickedFragments(fieldPaths: string[]) {
     throw new UnmatchedFragmentDefinitionError();
   }
 
-  const loadedFragments = options.fragments.map((f) => f.name.value);
-
-  if (!pickedFragments.some((pf) => loadedFragments.includes(pf.slice(2)))) {
+  const configuredFragments = options.fragments.map((f) => f.name.value);
+  if (!fragmentPaths.some((pf) => configuredFragments.includes(pf))) {
     throw new UnmatchedFragmentDefinitionError();
   }
 }
