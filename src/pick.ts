@@ -35,6 +35,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   while (selectionSets.length) {
     let hasFieldSelection = false;
     let numSelectionSets = selectionSets.length;
+    let stayPut = false;
 
     while (numSelectionSets-- !== 0) {
       const paths = fieldPathSplits.map((fps) => fps[level]).filter(Boolean);
@@ -56,9 +57,11 @@ export default function pick(fieldPaths: string[]): DocumentNode {
           case Kind.INLINE_FRAGMENT:
             if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
               if (options.noResolve) {
-                toDelete = options.noResolve.includes(
+                const antiResolveMatch = options.noResolve.includes(
                   selection.typeCondition.name.value
                 );
+                toDelete = antiResolveMatch;
+                stayPut = true;
               } else {
                 toDelete = !getTypeConditionPaths(paths).includes(
                   selection.typeCondition.name.value
@@ -84,10 +87,13 @@ export default function pick(fieldPaths: string[]): DocumentNode {
         }
       }
     }
-    level++;
 
     if (hasFieldSelection === false) {
       throw new UnspecifiedSelectionsError();
+    }
+
+    if (!stayPut) {
+      level++;
     }
   }
 
