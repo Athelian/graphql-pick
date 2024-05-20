@@ -1,12 +1,12 @@
 import gql from "graphql-tag";
 
-import pick, { initGQLPick as init, resetGQLPick as reset } from "../";
+import pick, { initGQLPick as init, resetGQLPick as reset } from "../..";
 import {
   AmbiguousAntiResolverPatternError,
   UnspecifiedSelectionsError
-} from "../src/errors/public";
-import schemaWithMocks, { schema } from "./mocks/graphql";
-import { getResponse } from "./utils/index";
+} from "../../src/errors/public";
+import schemaWithMocks, { schema } from "../mocks/graphql";
+import { getResponse } from "../utils/index";
 
 describe("pick without options", () => {
   beforeAll(() => {
