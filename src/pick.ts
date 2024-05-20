@@ -4,7 +4,6 @@ import {
   DocumentNode,
   FragmentDefinitionNode,
   Kind,
-  OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
   SelectionSetNode
@@ -22,43 +21,12 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const options = configManager.getOptions();
 
   const fieldPathSplits = fieldPaths.map(splitPath);
-  const rootPaths = new Set(fieldPathSplits.map((fps) => fps[0]));
-
-  const operationDefinitions = Array.from(rootPaths).map((rp) =>
-    buildOperationNodeForField({
-      schema,
-      kind: OperationTypeNode.QUERY,
-      circularReferenceDepth: options.circularReferenceDepth,
-      field: rp
-    })
-  );
-
-  if (!operationDefinitions.length) {
-    throw new Error("");
-  }
-
-  const operationDefinition: OperationDefinitionNode = {
-    ...operationDefinitions[0],
-    name: {
-      kind: Kind.NAME,
-      value:
-        operationDefinitions.length > 1
-          ? operationDefinitions
-              .map((od) => od.name?.value.slice(0, -5))
-              .join("") + "Query"
-          : operationDefinitions[0].name?.value ?? "anonymousQuery"
-    },
-    selectionSet: {
-      kind: Kind.SELECTION_SET,
-      selections: [
-        ...operationDefinitions[0].selectionSet.selections,
-        ...operationDefinitions
-          .slice(1)
-          .flatMap((od) => od.selectionSet.selections)
-      ]
-    }
-  };
-
+  const operationDefinition = buildOperationNodeForField({
+    schema,
+    kind: OperationTypeNode.QUERY,
+    circularReferenceDepth: options.circularReferenceDepth,
+    field: fieldPathSplits[0][0]
+  });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
   const selectionSets = [operationDefinition.selectionSet];

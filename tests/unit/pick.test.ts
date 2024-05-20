@@ -13,10 +13,6 @@ describe("pick without options", () => {
     init(schema);
   });
 
-  it("should throw if no selections are found in fieldPaths", async () => {
-    await expect(() => pick(["user"])).toThrow(UnspecifiedSelectionsError);
-  });
-
   it("should pick a field from an object type", async () => {
     const expected = gql`
       query {
@@ -33,24 +29,8 @@ describe("pick without options", () => {
     expect(resultResponse).toEqual(expectedResponse);
   });
 
-  it("should pick fields from adjacent root paths", async () => {
-    // This is non-trivial considering that `buildOperationNodeForField` supports one
-    const expected = gql`
-      query {
-        user {
-          name
-        }
-        users {
-          name
-        }
-      }
-    `;
-    const result = pick(["user.name", "users.name"]);
-
-    const expectedResponse = await getResponse(schemaWithMocks, expected);
-    const resultResponse = await getResponse(schemaWithMocks, result);
-
-    expect(resultResponse).toEqual(expectedResponse);
+  it("should throw if no selections are found in fieldPaths", async () => {
+    await expect(() => pick(["user"])).toThrow(UnspecifiedSelectionsError);
   });
 
   it("should pick a field from a resolved type", async () => {
