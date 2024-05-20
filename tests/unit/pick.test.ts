@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
 
+import { print } from "graphql";
 import pick, { initPick as init, resetPick as reset } from "../../src";
 import {
   AmbiguousAntiResolverPatternError,
@@ -26,7 +27,7 @@ describe("pick without options", () => {
   });
 
   it("should pick a field from an object type", async () => {
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           name
@@ -43,7 +44,7 @@ describe("pick without options", () => {
 
   it("should pick fields from adjacent root paths", async () => {
     // This is non-trivial considering that `buildOperationNodeForField` only takes one field
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           name
@@ -62,7 +63,7 @@ describe("pick without options", () => {
   });
 
   it("should pick a field from a resolved type", async () => {
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -81,7 +82,7 @@ describe("pick without options", () => {
   });
 
   it("should pick fields from multiple paths", async () => {
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -111,7 +112,7 @@ describe("pick without options", () => {
     const variables = {
       id: 1
     };
-    const expected = gql`
+    const expected = `
       query user($id: ID!) {
         user(id: $id) {
           name
@@ -187,7 +188,7 @@ describe("pick with anti resolution pattern", () => {
     init(schema, { noResolve: ["BadRequest", "Forbidden"] });
   });
   it("should pick a field by auto resolution when supplied with an unambiguous anti resolution pattern", async () => {
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -213,7 +214,7 @@ describe("pick with circularReferenceDepth", () => {
     });
   });
   it("should pick a field on a circular reference", async () => {
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -269,7 +270,7 @@ describe("pick with fragment definitions", () => {
       fragments: [organizationNameFragment]
     });
 
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -278,7 +279,7 @@ describe("pick with fragment definitions", () => {
         }
       }
 
-      ${organizationNameFragment}
+      ${print(organizationNameFragment)}
     `;
     const result = pick([
       `currentUser.organization.__fragment_OrganizationName`
@@ -294,7 +295,7 @@ describe("pick with fragment definitions", () => {
       fragments: [organizationNameFragment, organizationIdFragment]
     });
 
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -304,8 +305,8 @@ describe("pick with fragment definitions", () => {
         }
       }
 
-      ${organizationNameFragment}
-      ${organizationIdFragment}
+      ${print(organizationNameFragment)}
+      ${print(organizationIdFragment)}
     `;
     const result = pick([
       "currentUser.organization.__fragment_OrganizationName",
@@ -328,7 +329,7 @@ describe("pick with fragment definitions", () => {
     `;
     init(schema, { fragments: [multiDefinitionFragment] });
 
-    const expected = gql`
+    const expected = `
       query {
         currentUser {
           organization {
@@ -338,8 +339,8 @@ describe("pick with fragment definitions", () => {
         }
       }
 
-      ${organizationNameFragment}
-      ${organizationIdFragment}
+      ${print(organizationNameFragment)}
+      ${print(organizationIdFragment)}
     `;
 
     const result = pick([
