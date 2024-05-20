@@ -9,6 +9,7 @@ import {
 
 import {
   DocumentUninitializedError,
+  FragmentsUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal";
 import { getFragmentPaths } from "../utils";
@@ -48,7 +49,7 @@ class ConfigManager {
 
     this.document = {
       kind: Kind.DOCUMENT,
-      definitions: [...(this.options?.fragments ?? [])]
+      definitions: [...(this.options?.fragments || [])]
     };
   }
 
@@ -78,8 +79,9 @@ class ConfigManager {
       throw new DocumentUninitializedError();
     }
 
-    const operationAggregate: OperationDefinitionNode = {
+    const operationsAggregate: OperationDefinitionNode = {
       ...operations[0],
+      name: operations.length > 1 ? undefined : operations[0].name,
       selectionSet: {
         kind: Kind.SELECTION_SET,
         selections: [
@@ -91,13 +93,13 @@ class ConfigManager {
 
     return {
       ...this.document,
-      definitions: [operationAggregate, ...operationFragments]
+      definitions: [operationsAggregate, ...operationFragments]
     };
   }
 
   public findFragments(paths: string[]) {
     if (!this.options.fragments) {
-      throw new Error("Fragments are not initialized");
+      throw new FragmentsUninitializedError();
     }
     const fragmentPaths = getFragmentPaths(paths);
 

@@ -1,9 +1,10 @@
+import { buildOperationNodeForField } from "@graphql-toolkit/common";
 import { DocumentNode, FragmentDefinitionNode } from "graphql";
 
 type TransformedOptionKeys = keyof Pick<Options, "fragments">;
+type IntegratedBuildOperationNodeForFieldArgs = "circularReferenceDepth";
 
 export interface Options {
-  circularReferenceDepth?: number;
   fragments?: DocumentNode[];
   /**
    * Ignore pattern for resolving type unions. You must
@@ -12,6 +13,10 @@ export interface Options {
    * to ensure that the utility can unambiguously resolve the final `1`.
    */
   noResolve?: string[];
+  buildOperationNodeForFieldArgs?: Pick<
+    Parameters<typeof buildOperationNodeForField>[0],
+    IntegratedBuildOperationNodeForFieldArgs
+  >;
 }
 
 export interface ValidatedOptions extends Omit<Options, TransformedOptionKeys> {

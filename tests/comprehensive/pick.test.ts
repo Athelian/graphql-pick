@@ -24,7 +24,9 @@ describe("pick", () => {
     init(schema, {
       noResolve: ["BadRequest", "Forbidden"],
       fragments: [userFragment, organizationFragments],
-      circularReferenceDepth: 2
+      buildOperationNodeForFieldArgs: {
+        circularReferenceDepth: 2
+      }
     });
   });
 

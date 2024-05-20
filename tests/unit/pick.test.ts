@@ -208,7 +208,9 @@ describe("pick with anti resolution pattern", () => {
 
 describe("pick with circularReferenceDepth", () => {
   beforeAll(() => {
-    init(schema, { circularReferenceDepth: 2 });
+    init(schema, {
+      buildOperationNodeForFieldArgs: { circularReferenceDepth: 2 }
+    });
   });
   it("should pick a field on a circular reference", async () => {
     const expected = gql`

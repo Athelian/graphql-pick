@@ -17,6 +17,12 @@ export class DocumentUninitializedError extends UnintializedError {
   }
 }
 
+export class FragmentsUninitializedError extends UnintializedError {
+  constructor() {
+    super("Missing fragments.");
+  }
+}
+
 export class SchemaUninitializedError extends UnintializedError {
   constructor() {
     super("Missing schema.");

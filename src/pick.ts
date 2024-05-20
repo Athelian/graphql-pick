@@ -32,8 +32,11 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const operations = [];
   const fragments = new Set<FragmentDefinitionNode>();
 
-  for (const [_, paths] of rootPathMap) {
-    const [operation, operationFragments] = buildOperationNodeForPaths(paths);
+  for (const [field, paths] of rootPathMap) {
+    const [operation, operationFragments] = buildOperationNodeForPaths(
+      field,
+      paths
+    );
     operations.push(operation);
     operationFragments.forEach((f) => fragments.add(f));
   }
@@ -42,6 +45,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
 }
 
 function buildOperationNodeForPaths(
+  field: string,
   fieldPaths: string[]
 ): [OperationDefinitionNode, Set<FragmentDefinitionNode>] {
   assertValidPick(fieldPaths);
@@ -53,8 +57,8 @@ function buildOperationNodeForPaths(
   const operationDefinition = buildOperationNodeForField({
     schema,
     kind: OperationTypeNode.QUERY,
-    circularReferenceDepth: options.circularReferenceDepth,
-    field: fieldPathSplits[0][0]
+    field,
+    ...options.buildOperationNodeForFieldArgs
   });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
