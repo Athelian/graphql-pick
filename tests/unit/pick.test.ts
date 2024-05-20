@@ -34,7 +34,7 @@ describe("pick without options", () => {
   });
 
   it("should pick fields from adjacent root paths", async () => {
-    // This is non-trivial considering that `buildOperationNodeForField` supports one
+    // This is non-trivial considering that `buildOperationNodeForField` only takes one field
     const expected = gql`
       query {
         user {
