@@ -71,16 +71,27 @@ class ConfigManager {
   }
 
   public composeDocument(
-    definition: OperationDefinitionNode,
+    operations: OperationDefinitionNode[],
     operationFragments: Set<FragmentDefinitionNode>
   ) {
     if (!this.document) {
       throw new DocumentUninitializedError();
     }
 
+    const operationAggregate: OperationDefinitionNode = {
+      ...operations[0],
+      selectionSet: {
+        kind: Kind.SELECTION_SET,
+        selections: [
+          ...operations[0].selectionSet.selections,
+          ...operations.slice(1).flatMap((o) => o.selectionSet.selections[0])
+        ]
+      }
+    };
+
     return {
       ...this.document,
-      definitions: [definition, ...operationFragments]
+      definitions: [operationAggregate, ...operationFragments]
     };
   }
 

@@ -62,6 +62,30 @@ const resolver = {
           name: "Acme Inc."
         }
       };
+    },
+    users: () => {
+      return [
+        {
+          id: "1",
+          name: "John Doe",
+          age: 30,
+          organization: {
+            __typename: "Organization",
+            id: "1",
+            name: "Acme Inc."
+          }
+        },
+        {
+          id: "2",
+          name: "Jane Smith",
+          age: 26,
+          organization: {
+            __typename: "Organization",
+            id: "2",
+            name: "Globex Corp."
+          }
+        }
+      ];
     }
   },
   OrganizationPayload: {

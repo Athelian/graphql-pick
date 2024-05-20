@@ -4,6 +4,7 @@ import {
   DocumentNode,
   FragmentDefinitionNode,
   Kind,
+  OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
   SelectionSetNode
@@ -15,6 +16,29 @@ import { getTypeConditionPaths, hasFragmentPath, splitPath } from "./utils";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
+  const rootPaths = new Set(fieldPaths.map((path) => path.split(".")[0]));
+  const rootPathMap = new Map<string, string[]>();
+
+  for (const rootPath of rootPaths) {
+    const paths = fieldPaths.filter((path) => path.startsWith(rootPath));
+    rootPathMap.set(rootPath, paths);
+  }
+
+  const operations = [];
+  const fragments = new Set<FragmentDefinitionNode>();
+
+  for (const [_, paths] of rootPathMap) {
+    const [operation, operationFragments] = buildOperationNodeForPaths(paths);
+    operations.push(operation);
+    operationFragments.forEach((f) => fragments.add(f));
+  }
+
+  return configManager.composeDocument(operations, fragments);
+}
+
+function buildOperationNodeForPaths(
+  fieldPaths: string[]
+): [OperationDefinitionNode, Set<FragmentDefinitionNode>] {
   assertValidPick(fieldPaths);
 
   const schema = configManager.getSchema();
@@ -98,5 +122,5 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     }
   }
 
-  return configManager.composeDocument(operationDefinition, operationFragments);
+  return [operationDefinition, operationFragments];
 }
