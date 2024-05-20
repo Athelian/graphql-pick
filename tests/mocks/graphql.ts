@@ -27,7 +27,8 @@ const typeDefs = `
   }
 
   type Query {
-    user: User
+    currentUser: User
+    user(id: ID!): User
     users: [User]
   }
 `;

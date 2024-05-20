@@ -14,18 +14,26 @@ describe("pick without options", () => {
   });
 
   it("should throw if no selections are found in fieldPaths", async () => {
-    await expect(() => pick(["user"])).toThrow(UnspecifiedSelectionsError);
+    await expect(() => pick(["currentUser"])).toThrow(
+      UnspecifiedSelectionsError
+    );
+  });
+
+  it("should throw if no type resolution is specified", async () => {
+    const myFunction = () => pick(["currentUser.organization.name"]);
+    await expect(myFunction).toThrow(UnspecifiedSelectionsError);
+    await expect(myFunction).toThrow("Missing selection in field path.");
   });
 
   it("should pick a field from an object type", async () => {
     const expected = gql`
       query {
-        user {
+        currentUser {
           name
         }
       }
     `;
-    const result = pick(["user.name"]);
+    const result = pick(["currentUser.name"]);
 
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
@@ -37,7 +45,7 @@ describe("pick without options", () => {
     // This is non-trivial considering that `buildOperationNodeForField` only takes one field
     const expected = gql`
       query {
-        user {
+        currentUser {
           name
         }
         users {
@@ -45,7 +53,7 @@ describe("pick without options", () => {
         }
       }
     `;
-    const result = pick(["user.name", "users.name"]);
+    const result = pick(["currentUser.name", "users.name"]);
 
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
@@ -56,7 +64,7 @@ describe("pick without options", () => {
   it("should pick a field from a resolved type", async () => {
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ... on Organization {
               name
@@ -65,7 +73,7 @@ describe("pick without options", () => {
         }
       }
     `;
-    const result = pick(["user.organization.__on_Organization.name"]);
+    const result = pick(["currentUser.organization.__on_Organization.name"]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
@@ -75,7 +83,7 @@ describe("pick without options", () => {
   it("should pick fields from multiple paths", async () => {
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ... on Organization {
               name
@@ -90,8 +98,8 @@ describe("pick without options", () => {
       }
     `;
     const result = pick([
-      "user.organization.__on_Organization.name",
-      "user.previousOrganization.__on_Organization.name"
+      "currentUser.organization.__on_Organization.name",
+      "currentUser.previousOrganization.__on_Organization.name"
     ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
@@ -99,10 +107,31 @@ describe("pick without options", () => {
     expect(resultResponse).toEqual(expectedResponse);
   });
 
-  it("should throw if no type resolution is specified", async () => {
-    const myFunction = () => pick(["user.organization.name"]);
-    await expect(myFunction).toThrow(UnspecifiedSelectionsError);
-    await expect(myFunction).toThrow("Missing selection in field path.");
+  it("should include variables", async () => {
+    const expected = gql`
+      query {
+        currentUser {
+          organization {
+            ... on Organization {
+              name
+            }
+          }
+          previousOrganization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick([
+      "currentUser.organization.__on_Organization.name",
+      "currentUser.previousOrganization.__on_Organization.name"
+    ]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
   });
 });
 
@@ -126,7 +155,7 @@ describe("pick with invalid options", () => {
     const myFunction = () => {
       const invalidFragment = gql`
         query {
-          user {
+          currentUser {
             name
           }
         }
@@ -143,7 +172,7 @@ describe("pick with invalid options", () => {
           name
         }
         query {
-          user {
+          currentUser {
             name
           }
         }
@@ -161,7 +190,7 @@ describe("pick with anti resolution pattern", () => {
   it("should pick a field by auto resolution when supplied with an unambiguous anti resolution pattern", async () => {
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ... on Organization {
               name
@@ -170,7 +199,7 @@ describe("pick with anti resolution pattern", () => {
         }
       }
     `;
-    const result = pick(["user.organization.name"]);
+    const result = pick(["currentUser.organization.name"]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
@@ -185,7 +214,7 @@ describe("pick with circularReferenceDepth", () => {
   it("should pick a field on a circular reference", async () => {
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ... on Organization {
               users {
@@ -202,7 +231,7 @@ describe("pick with circularReferenceDepth", () => {
     `;
 
     const result = pick([
-      "user.organization.__on_Organization.users.organization.__on_Organization.name"
+      "currentUser.organization.__on_Organization.users.organization.__on_Organization.name"
     ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
@@ -229,7 +258,7 @@ describe("pick with fragment definitions", () => {
 
   it("should throw on references to non-existent fragment definition", async () => {
     const myFunction = () => {
-      pick([`user.organization.__on_NonExistentFragment`]);
+      pick([`currentUser.organization.__on_NonExistentFragment`]);
     };
     await expect(myFunction).toThrow(Error);
   });
@@ -241,7 +270,7 @@ describe("pick with fragment definitions", () => {
 
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ...OrganizationName
           }
@@ -250,7 +279,9 @@ describe("pick with fragment definitions", () => {
 
       ${organizationNameFragment}
     `;
-    const result = pick([`user.organization.__fragment_OrganizationName`]);
+    const result = pick([
+      `currentUser.organization.__fragment_OrganizationName`
+    ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
@@ -264,7 +295,7 @@ describe("pick with fragment definitions", () => {
 
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ...OrganizationName
             ...OrganizationId
@@ -276,8 +307,8 @@ describe("pick with fragment definitions", () => {
       ${organizationIdFragment}
     `;
     const result = pick([
-      "user.organization.__fragment_OrganizationName",
-      "user.organization.__fragment_OrganizationId"
+      "currentUser.organization.__fragment_OrganizationName",
+      "currentUser.organization.__fragment_OrganizationId"
     ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
@@ -298,7 +329,7 @@ describe("pick with fragment definitions", () => {
 
     const expected = gql`
       query {
-        user {
+        currentUser {
           organization {
             ...OrganizationName
             ...OrganizationId
@@ -311,8 +342,8 @@ describe("pick with fragment definitions", () => {
     `;
 
     const result = pick([
-      "user.organization.__fragment_OrganizationName",
-      "user.organization.__fragment_OrganizationId"
+      "currentUser.organization.__fragment_OrganizationName",
+      "currentUser.organization.__fragment_OrganizationId"
     ]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
