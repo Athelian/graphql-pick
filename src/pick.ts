@@ -62,7 +62,7 @@ export default function pick(fieldPaths: string[]): DocumentNode {
                   selection.typeCondition.name.value
                 );
                 toDelete = antiResolveMatch;
-                stayPut = true;
+                stayPut = antiResolveMatch;
               } else {
                 toDelete = !getTypeConditionPaths(paths).includes(
                   selection.typeCondition.name.value
