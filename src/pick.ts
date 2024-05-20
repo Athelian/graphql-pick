@@ -20,16 +20,16 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const schema = configManager.getSchema();
   const options = configManager.getOptions();
 
+  const fieldPathSplits = fieldPaths.map(splitPath);
   const operationDefinition = buildOperationNodeForField({
     schema,
     kind: OperationTypeNode.QUERY,
     circularReferenceDepth: options.circularReferenceDepth,
-    field: "user"
+    field: fieldPathSplits[0][0]
   });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
   const selectionSets = [operationDefinition.selectionSet];
-  const fieldPathSplits = fieldPaths.map(splitPath);
 
   let level = 0;
 
