@@ -38,6 +38,7 @@ const resolver = {
       return {
         id: "1",
         name: "John Doe",
+        age: 30,
         organization: {
           __typename: "Organization",
           id: "1",
@@ -46,6 +47,7 @@ const resolver = {
             {
               id: "1",
               name: "John Doe",
+              age: 30,
               organization: {
                 __typename: "Organization",
                 id: "1",
