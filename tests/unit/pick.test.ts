@@ -1,6 +1,6 @@
 import gql from "graphql-tag";
 
-import pick, { initGQLPick as init, resetGQLPick as reset } from "../..";
+import pick, { initPick as init, resetPick as reset } from "../../src";
 import {
   AmbiguousAntiResolverPatternError,
   UnspecifiedSelectionsError

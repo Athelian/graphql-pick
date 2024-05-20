@@ -1,20 +1,16 @@
 src/
 
-__tests__/
+tests/
 *.test.ts
-*.spec.ts
 
 node_modules/
-dist/
-
 tsconfig.json
 
-jest.config.js
-jest.setup.js
+jest.config.json
+jest.setup.ts
 
 .vscode/
 
-# Exclude lock files (optional, some prefer to include these)
 pnpm-lock.yaml
 
 *.log

@@ -1,6 +1,6 @@
 import gql from "graphql-tag";
 
-import pick, { initGQLPick as init } from "../..";
+import pick, { initPick as init } from "../../src";
 import schemaWithMocks, { schema } from "../mocks/graphql";
 import { getResponse } from "../utils/index";
 

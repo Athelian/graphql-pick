@@ -1,4 +1,4 @@
-import { buildOperationNodeForField } from "@graphql-toolkit/common";
+import { buildOperationNodeForField } from "@graphql-tools/utils";
 
 import {
   DocumentNode,
@@ -10,15 +10,15 @@ import {
   SelectionSetNode
 } from "graphql";
 
-import configManager from "./config";
-import { UnspecifiedSelectionsError } from "./errors/public";
+import configManager from "./config/index.js";
+import { UnspecifiedSelectionsError } from "./errors/public.js";
 import {
   getTypeConditionPaths,
   hasFragmentPath,
   splitPath,
   splitPaths
-} from "./utils";
-import assertValidPick from "./validator";
+} from "./utils/index.js";
+import assertValidPick from "./validator.js";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
   const rootPaths = new Set(splitPaths(fieldPaths).map((fps) => fps[0]));

@@ -11,12 +11,12 @@ import {
   DocumentUninitializedError,
   FragmentsUninitializedError,
   SchemaUninitializedError
-} from "../errors/internal";
-import { getFragmentPaths } from "../utils";
-import { DEFAULT_OPTIONS } from "./constants";
-import { parseOptions } from "./parser";
+} from "../errors/internal.js";
+import { getFragmentPaths } from "../utils/index.js";
+import { DEFAULT_OPTIONS } from "./constants.js";
+import { parseOptions } from "./parser.js";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
-import { assertValidConfiguration } from "./validator";
+import { assertValidConfiguration } from "./validator.js";
 
 class ConfigManager {
   private static instance: ConfigManager;

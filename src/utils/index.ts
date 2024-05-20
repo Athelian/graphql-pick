@@ -2,7 +2,7 @@ import {
   FRAGMENT_DELIMITER,
   PATH_SEPARATOR,
   TYPE_CONDITION_DELIMITER
-} from "../config/constants";
+} from "../config/constants.js";
 
 export function splitPath(path: string) {
   return path.split(PATH_SEPARATOR);

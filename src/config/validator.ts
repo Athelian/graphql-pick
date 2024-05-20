@@ -3,7 +3,7 @@ import { GraphQLSchema, Kind } from "graphql";
 import {
   AmbiguousAntiResolverPatternError,
   ImpureFragmentDefinitionsError
-} from "../errors/public";
+} from "../errors/public.js";
 import { Options } from "./types";
 
 export function assertValidConfiguration(

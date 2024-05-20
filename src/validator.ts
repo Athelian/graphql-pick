@@ -1,9 +1,9 @@
-import configManager from "./config";
+import configManager from "./config/index.js";
 import {
   UnmatchedFragmentDefinitionError,
   UnspecifiedSelectionsError
-} from "./errors/public";
-import { getFragmentPaths } from "./utils";
+} from "./errors/public.js";
+import { getFragmentPaths } from "./utils/index.js";
 
 export default function assertValidPick(fieldPaths: string[]) {
   assertValidSelections(fieldPaths);
