@@ -264,4 +264,39 @@ describe("pick with fragment definitions", () => {
 
     expect(resultResponse).toEqual(expectedResponse);
   });
+
+  it("should pick fields across multi fragment definitions", async () => {
+    const multiDefinitionFragment = gql`
+      fragment OrganizationName on Organization {
+        name
+      }
+      fragment OrganizationId on Organization {
+        id
+      }
+    `;
+    init(schema, { fragments: [multiDefinitionFragment] });
+
+    const expected = gql`
+      query {
+        user {
+          organization {
+            ...OrganizationName
+            ...OrganizationId
+          }
+        }
+      }
+
+      ${organizationNameFragment}
+      ${organizationIdFragment}
+    `;
+
+    const result = pick([
+      "user.organization.__fragment_OrganizationName",
+      "user.organization.__fragment_OrganizationId"
+    ]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
 });
