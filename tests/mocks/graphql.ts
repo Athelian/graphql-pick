@@ -32,6 +32,7 @@ const typeDefs = `
     currentUser: User
     user(id: ID!): User
     users: [User]
+    organization(id: ID!): Organization
   }
 `;
 
@@ -78,6 +79,9 @@ const resolver: IResolvers = {
     },
     users: () => {
       return users;
+    },
+    organization: (_: unknown, { id }: { id: string }) => {
+      return organizations.find((o: any) => o.id === parseInt(id));
     }
   },
   OrganizationPayload: {
