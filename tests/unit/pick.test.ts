@@ -108,28 +108,27 @@ describe("pick without options", () => {
   });
 
   it("should include variables", async () => {
+    const variables = {
+      id: 1
+    };
     const expected = gql`
-      query {
-        currentUser {
-          organization {
-            ... on Organization {
-              name
-            }
-          }
-          previousOrganization {
-            ... on Organization {
-              name
-            }
-          }
+      query user($id: ID!) {
+        user(id: $id) {
+          name
         }
       }
     `;
-    const result = pick([
-      "currentUser.organization.__on_Organization.name",
-      "currentUser.previousOrganization.__on_Organization.name"
-    ]);
-    const expectedResponse = await getResponse(schemaWithMocks, expected);
-    const resultResponse = await getResponse(schemaWithMocks, result);
+    const result = pick(["user.name"]);
+    const expectedResponse = await getResponse(
+      schemaWithMocks,
+      expected,
+      variables
+    );
+    const resultResponse = await getResponse(
+      schemaWithMocks,
+      result,
+      variables
+    );
 
     expect(resultResponse).toEqual(expectedResponse);
   });

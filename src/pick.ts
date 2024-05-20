@@ -12,15 +12,20 @@ import {
 
 import configManager from "./config";
 import { UnspecifiedSelectionsError } from "./errors/public";
-import { getTypeConditionPaths, hasFragmentPath, splitPath } from "./utils";
+import {
+  getTypeConditionPaths,
+  hasFragmentPath,
+  splitPath,
+  splitPaths
+} from "./utils";
 import assertValidPick from "./validator";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
-  const rootPaths = new Set(fieldPaths.map((path) => path.split(".")[0]));
+  const rootPaths = new Set(splitPaths(fieldPaths).map((fps) => fps[0]));
   const rootPathMap = new Map<string, string[]>();
 
   for (const rootPath of rootPaths) {
-    const paths = fieldPaths.filter((path) => path.startsWith(rootPath));
+    const paths = fieldPaths.filter((p) => splitPath(p)[0] === rootPath);
     rootPathMap.set(rootPath, paths);
   }
 

@@ -28,10 +28,14 @@ describe("pick", () => {
     });
   });
 
-  it("should pick a field from an object type", async () => {
+  it("should resolve relevant fields based on configuration and selection", async () => {
+    const variables = { id: 2 };
     const expected = gql`
-      query {
-        user {
+      query ($id: ID!) {
+        user(id: $id) {
+          id
+        }
+        currentUser {
           id
           ...UserFields
           organization {
@@ -54,16 +58,25 @@ describe("pick", () => {
     `;
     const result = pick([
       "user.id",
-      "user.__fragment_UserFields",
+      "currentUser.id",
+      "currentUser.__fragment_UserFields",
       "users.__fragment_UserFields",
-      "user.organization.__fragment_OrganizationId",
-      "user.organization.__fragment_OrganizationName",
-      "user.organization.users.id",
-      "user.organization.users.__fragment_UserFields"
+      "currentUser.organization.__fragment_OrganizationId",
+      "currentUser.organization.__fragment_OrganizationName",
+      "currentUser.organization.users.id",
+      "currentUser.organization.users.__fragment_UserFields"
     ]);
 
-    const expectedResponse = await getResponse(schemaWithMocks, expected);
-    const resultResponse = await getResponse(schemaWithMocks, result);
+    const expectedResponse = await getResponse(
+      schemaWithMocks,
+      expected,
+      variables
+    );
+    const resultResponse = await getResponse(
+      schemaWithMocks,
+      result,
+      variables
+    );
 
     expect(resultResponse).toEqual(expectedResponse);
   });

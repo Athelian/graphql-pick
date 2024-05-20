@@ -1,5 +1,7 @@
 import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { IResolvers } from "@graphql-tools/utils";
+import { Organization, User } from "./types";
 
 const typeDefs = `
   union OrganizationPayload = BadRequest | Forbidden | Organization
@@ -33,64 +35,53 @@ const typeDefs = `
   }
 `;
 
-const resolver = {
+const organizations: Organization[] = [
+  {
+    id: 1,
+    name: "Acme Inc.",
+    users: []
+  },
+  {
+    id: 2,
+    name: "Globex Corp.",
+    users: []
+  }
+];
+
+const users: User[] = [
+  {
+    id: 1,
+    name: "John Doe",
+    age: 30,
+    organization: organizations[0],
+    previousOrganization: organizations[1]
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    age: 26,
+    organization: organizations[1],
+    previousOrganization: organizations[0]
+  }
+];
+
+organizations[0].users.push(users[0]);
+organizations[1].users.push(users[1]);
+
+const resolver: IResolvers = {
   Query: {
-    user: () => {
-      return {
-        id: "1",
-        name: "John Doe",
-        age: 30,
-        organization: {
-          __typename: "Organization",
-          id: "1",
-          name: "Acme Inc.",
-          users: [
-            {
-              id: "1",
-              name: "John Doe",
-              age: 30,
-              organization: {
-                __typename: "Organization",
-                id: "1",
-                name: "Acme Inc."
-              }
-            }
-          ]
-        },
-        previousOrganization: {
-          __typename: "Organization",
-          id: "1",
-          name: "Acme Inc."
-        }
-      };
+    currentUser: () => {
+      return users[0];
+    },
+    user: (_: unknown, { id }: { id: string }) => {
+      return users.find((u: any) => u.id === parseInt(id));
     },
     users: () => {
-      return [
-        {
-          id: "1",
-          name: "John Doe",
-          age: 30,
-          organization: {
-            __typename: "Organization",
-            id: "1",
-            name: "Acme Inc."
-          }
-        },
-        {
-          id: "2",
-          name: "Jane Smith",
-          age: 26,
-          organization: {
-            __typename: "Organization",
-            id: "2",
-            name: "Globex Corp."
-          }
-        }
-      ];
+      return users;
     }
   },
   OrganizationPayload: {
-    __resolveType(obj: any) {
+    __resolveType(obj: unknown) {
       return "Organization";
     }
   }
