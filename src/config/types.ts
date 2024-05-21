@@ -1,4 +1,4 @@
-import { buildOperationNodeForField } from "@graphql-toolkit/common";
+import { buildOperationNodeForField } from "@graphql-tools/utils";
 import { DocumentNode, FragmentDefinitionNode } from "graphql";
 
 type TransformedOptionKeys = keyof Pick<Options, "fragments">;
