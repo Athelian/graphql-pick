@@ -8,6 +8,13 @@ type Forbidden {
   reason: String!
 }
 
+type Address {
+  street: String!
+  city: String!
+  state: String!
+  zip: String!
+}
+
 type Organization {
   id: ID!
   name: String!
@@ -19,6 +26,7 @@ type User {
   id: ID!
   name: String!
   age: Int
+  address: Address
   organization: OrganizationPayload
   previousOrganization: OrganizationPayload
 }

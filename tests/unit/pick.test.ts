@@ -386,4 +386,38 @@ describe("pick with fragment definitions", () => {
 
     expect(resultResponse).toEqual(expectedResponse);
   });
+
+  it("should pick fields with multiple fragment definitions of the same depth", async () => {
+    const addressZipFragment = gql`
+      fragment AddressZip on Address {
+        zip
+      }
+    `;
+    init(schema, { fragments: [addressZipFragment, organizationNameFragment] });
+
+    const expected = gql`
+      query {
+        currentUser {
+          address {
+            ...AddressZip
+          }
+          organization {
+            ...OrganizationName
+          }
+        }
+      }
+
+      ${addressZipFragment}
+      ${organizationNameFragment}
+    `;
+
+    const result = pick([
+      "currentUser.organization.__fragment_AddressZip",
+      "currentUser.organization.__fragment_OrganizationName"
+    ]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
 });

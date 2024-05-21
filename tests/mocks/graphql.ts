@@ -28,6 +28,12 @@ const users: User[] = [
     id: 1,
     name: "John Doe",
     age: 30,
+    address: {
+      street: "123 Main St.",
+      city: "Springfield",
+      state: "IL",
+      zip: "62701"
+    },
     organization: organizations[0],
     previousOrganization: organizations[1]
   },
@@ -35,6 +41,12 @@ const users: User[] = [
     id: 2,
     name: "Jane Smith",
     age: 26,
+    address: {
+      street: "456 Elm St.",
+      city: "Springfield",
+      state: "IL",
+      zip: "62702"
+    },
     organization: organizations[1],
     previousOrganization: organizations[0]
   }
