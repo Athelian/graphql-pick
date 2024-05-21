@@ -152,6 +152,21 @@ describe("pick without options", () => {
       (expected.definitions[0] as any).variableDefinitions?.length
     ).toEqual((result.definitions[0] as any).variableDefinitions?.length);
   });
+
+  it("should support field aliasing", async () => {
+    const expected = gql`
+      query {
+        currentUser {
+          fullName: name
+        }
+      }
+    `;
+    const result = pick(["currentUser.__alias_fullName_name"]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
 });
 
 describe("pick with invalid options", () => {
