@@ -32,8 +32,8 @@ export function parseAliasPath(path: string) {
   return path.match(ALIAS_MATCHER)?.[1];
 }
 
-export function wrapAliasPath(path: string) {
-  return `${ALIAS_DELIMITER}${path}`;
+export function wrapAliasPath(alias: string, field: string) {
+  return `${ALIAS_DELIMITER}${alias}_${field}`;
 }
 
 export function getAliasPaths(paths: string[]) {
@@ -53,8 +53,8 @@ export function parseTypeConditionPath(path: string) {
   return path.slice(TYPE_CONDITION_DELIMITER.length);
 }
 
-export function wrapTypeConditionPath(path: string) {
-  return `${TYPE_CONDITION_DELIMITER}${path}`;
+export function wrapTypeConditionPath(type: string) {
+  return `${TYPE_CONDITION_DELIMITER}${type}`;
 }
 
 export function getTypeConditionPaths(paths: string[]) {
@@ -74,8 +74,8 @@ export function parseFragmentPath(path: string) {
   return path.slice(FRAGMENT_DELIMITER.length);
 }
 
-export function wrapFragmentPath(path: string) {
-  return `${FRAGMENT_DELIMITER}${path}`;
+export function wrapFragmentPath(fragment: string) {
+  return `${FRAGMENT_DELIMITER}${fragment}`;
 }
 
 export function getFragmentPaths(paths: string[]) {
