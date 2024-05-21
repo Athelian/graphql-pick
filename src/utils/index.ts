@@ -1,4 +1,5 @@
 import {
+  ALIAS_MATCHER,
   FRAGMENT_DELIMITER,
   PATH_SEPARATOR,
   TYPE_CONDITION_DELIMITER
@@ -10,6 +11,22 @@ export function splitPath(path: string) {
 
 export function splitPaths(paths: string[]) {
   return paths.map(splitPath);
+}
+
+export function isAliasPath(path: string) {
+  return path.startsWith(TYPE_CONDITION_DELIMITER);
+}
+
+export function hasAliasPath(paths: string[]) {
+  return paths.some(isTypeConditionPath);
+}
+
+export function normalizeAliasPath(path: string) {
+  return path.replace(ALIAS_MATCHER, "");
+}
+
+export function parseAliasPath(path: string) {
+  return path.match(ALIAS_MATCHER)?.[1];
 }
 
 export function isTypeConditionPath(path: string) {
@@ -42,10 +59,6 @@ export function hasFragmentPath(paths: string[]) {
 
 export function parseFragmentPath(path: string) {
   return path.slice(FRAGMENT_DELIMITER.length);
-}
-
-export function getSomeFragmentPath(paths: string[]) {
-  return getFragmentPaths(paths)[0];
 }
 
 export function getFragmentPaths(paths: string[]) {

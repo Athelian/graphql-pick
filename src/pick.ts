@@ -4,6 +4,7 @@ import {
   DocumentNode,
   FragmentDefinitionNode,
   Kind,
+  NameNode,
   OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
@@ -16,6 +17,8 @@ import { UnspecifiedSelectionsError } from "./errors/public.js";
 import {
   getTypeConditionPaths,
   hasFragmentPath,
+  normalizeAliasPath,
+  parseAliasPath,
   splitPath,
   splitPaths
 } from "./utils/index.js";
@@ -118,7 +121,21 @@ function buildOperationNodeForPaths(
             }
             break;
           case Kind.FIELD:
-            toDelete = !paths.includes(selection.name.value);
+            const normalizedPaths = paths.map(normalizeAliasPath);
+            const indexOf = normalizedPaths.indexOf(selection.name.value);
+
+            if (indexOf === -1) {
+              toDelete = true;
+            } else if (paths[indexOf] !== normalizedPaths[indexOf]) {
+              const alias = parseAliasPath(paths[indexOf]);
+              if (alias) {
+                (selection as { alias: NameNode }).alias = {
+                  kind: Kind.NAME,
+                  value: alias
+                };
+              }
+            }
+
             break;
         }
 

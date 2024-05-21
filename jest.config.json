@@ -2,7 +2,7 @@
   "preset": "ts-jest",
   "testEnvironment": "node",
   "moduleFileExtensions": ["ts", "js"],
-  "testMatch": ["<rootDir>/tests/**/*.test.ts"],
+  "testMatch": ["**/*.test.ts"],
   "moduleNameMapper": {
     "^(.*)\\.js$": "$1"
   }
