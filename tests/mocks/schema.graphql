@@ -11,6 +11,7 @@ type Forbidden {
 type Organization {
   id: ID!
   name: String!
+  hasUser(id: ID!): Boolean
   users: [User]
 }
 

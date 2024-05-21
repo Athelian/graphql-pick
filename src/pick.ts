@@ -7,12 +7,18 @@ import {
   OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
-  SelectionSetNode
+  SelectionSetNode,
+  VariableDefinitionNode
 } from "graphql";
 
 import configManager from "./config/index.js";
 import { UnspecifiedSelectionsError } from "./errors/public.js";
-import { getTypeConditionPaths, hasFragmentPath, splitPath, splitPaths } from "./utils/index.js";
+import {
+  getTypeConditionPaths,
+  hasFragmentPath,
+  splitPath,
+  splitPaths
+} from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
 export default function pick(fieldPaths: string[]): DocumentNode {
@@ -28,9 +34,21 @@ export default function pick(fieldPaths: string[]): DocumentNode {
   const fragments = new Set<FragmentDefinitionNode>();
 
   for (const [field, paths] of rootPathMap) {
-    const [operation, operationFragments] = buildOperationNodeForPaths(field, paths);
+    const [operation, operationFragments] = buildOperationNodeForPaths(
+      field,
+      paths
+    );
     operations.push(operation);
     operationFragments.forEach((f) => fragments.add(f));
+  }
+
+  for (const operation of operations) {
+    if (operation.variableDefinitions) {
+      (operation.variableDefinitions as VariableDefinitionNode[]) =
+        operation.variableDefinitions?.filter((vd) => {
+          return !vd.variable.name.value.includes("_");
+        });
+    }
   }
 
   return configManager.composeDocument(operations, fragments);
@@ -51,7 +69,10 @@ function buildOperationNodeForPaths(
     kind: OperationTypeNode.QUERY,
     field,
     ...options.buildOperationNodeForFieldArgs,
-    depthLimit: fieldPathSplits.reduce((memo, fps) => Math.max(memo, fps.length), 0)
+    depthLimit: fieldPathSplits.reduce(
+      (memo, fps) => Math.max(memo, fps.length),
+      0
+    )
   });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
@@ -105,7 +126,10 @@ function buildOperationNodeForPaths(
           (selectionSet.selections as SelectionNode[]).splice(j, 1);
         } else {
           hasFieldSelection = true;
-          if ("selectionSet" in selection && selection.selectionSet?.selections) {
+          if (
+            "selectionSet" in selection &&
+            selection.selectionSet?.selections
+          ) {
             selectionSets.push(selection.selectionSet);
           }
         }

@@ -132,6 +132,26 @@ describe("pick without options", () => {
 
     expect(resultResponse).toEqual(expectedResponse);
   });
+
+  // TODO: select variables from relevant field selections only
+  it("should omit variable definitions from nested queries", async () => {
+    const expected = gql`
+      query user($id: ID!) {
+        user(id: $id) {
+          organization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick(["user.organization.__on_Organization.name"]);
+
+    expect(
+      (expected.definitions[0] as any).variableDefinitions?.length
+    ).toEqual((result.definitions[0] as any).variableDefinitions?.length);
+  });
 });
 
 describe("pick with invalid options", () => {
