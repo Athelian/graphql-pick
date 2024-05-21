@@ -1,13 +1,13 @@
 import { buildOperationNodeForField } from "@graphql-tools/utils";
 
 import {
+  DocumentNode,
   FragmentDefinitionNode,
   Kind,
   OperationDefinitionNode,
   OperationTypeNode,
   SelectionNode,
-  SelectionSetNode,
-  print
+  SelectionSetNode
 } from "graphql";
 
 import configManager from "./config/index.js";
@@ -15,7 +15,7 @@ import { UnspecifiedSelectionsError } from "./errors/public.js";
 import { getTypeConditionPaths, hasFragmentPath, splitPath, splitPaths } from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
-export default function pick(fieldPaths: string[]): string {
+export default function pick(fieldPaths: string[]): DocumentNode {
   const rootPaths = new Set(splitPaths(fieldPaths).map((fps) => fps[0]));
   const rootPathMap = new Map<string, string[]>();
 
@@ -33,7 +33,7 @@ export default function pick(fieldPaths: string[]): string {
     operationFragments.forEach((f) => fragments.add(f));
   }
 
-  return print(configManager.composeDocument(operations, fragments));
+  return configManager.composeDocument(operations, fragments);
 }
 
 function buildOperationNodeForPaths(

@@ -1,6 +1,5 @@
 import gql from "graphql-tag";
 
-import { print } from "graphql";
 import pick, { initPick as init } from "../../src";
 import schemaWithMocks, { schema } from "../mocks/graphql";
 import { getResponse } from "../utils/index";
@@ -33,7 +32,7 @@ describe("pick", () => {
 
   it("should resolve relevant fields based on configuration and selection", async () => {
     const variables = { id: 2 };
-    const expected = `
+    const expected = gql`
       query ($id: ID!) {
         user(id: $id) {
           id
@@ -56,8 +55,8 @@ describe("pick", () => {
           ...UserFields
         }
       }
-      ${print(userFragment)}
-      ${print(organizationFragments)}
+      ${userFragment}
+      ${organizationFragments}
     `;
     const result = pick([
       "user.id",
