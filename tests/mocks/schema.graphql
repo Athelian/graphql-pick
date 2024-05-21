@@ -1,0 +1,30 @@
+union OrganizationPayload = BadRequest | Forbidden | Organization
+
+type BadRequest {
+  reason: String!
+}
+
+type Forbidden {
+  reason: String!
+}
+
+type Organization {
+  id: ID!
+  name: String!
+  users: [User]
+}
+
+type User {
+  id: ID!
+  name: String!
+  age: Int
+  organization: OrganizationPayload
+  previousOrganization: OrganizationPayload
+}
+
+type Query {
+  currentUser: User
+  user(id: ID!): User
+  users: [User]
+  organization(id: ID!): Organization
+}

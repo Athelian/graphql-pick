@@ -1,40 +1,14 @@
+import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
+import { loadSchemaSync } from "@graphql-tools/load";
 import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { IResolvers } from "@graphql-tools/utils";
+import path from "path";
 import { Organization, User } from "./types";
 
-const typeDefs = `
-  union OrganizationPayload = BadRequest | Forbidden | Organization
-
-  type BadRequest {
-    reason: String!
-  }
-
-  type Forbidden {
-    reason: String!
-  }
-
-  type Organization {
-    id: ID!
-    name: String!
-    users: [User]
-  }
-
-  type User {
-    id: ID!
-    name: String!
-    age: Int
-    organization: OrganizationPayload
-    previousOrganization: OrganizationPayload
-  }
-
-  type Query {
-    currentUser: User
-    user(id: ID!): User
-    users: [User]
-    organization(id: ID!): Organization
-  }
-`;
+const typeDefs = loadSchemaSync(path.join(__dirname, "schema.graphql"), {
+  loaders: [new GraphQLFileLoader()]
+});
 
 const organizations: Organization[] = [
   {
