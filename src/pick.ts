@@ -88,7 +88,7 @@ function buildOperationNodeForPaths(
                   selection.typeCondition.name.value
                 );
                 toDelete = antiResolveMatch;
-                stayPut = stayPut ?? antiResolveMatch;
+                stayPut = stayPut || antiResolveMatch;
               } else {
                 toDelete = !getTypeConditionPaths(paths).includes(
                   selection.typeCondition.name.value
