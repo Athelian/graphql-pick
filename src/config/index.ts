@@ -14,7 +14,7 @@ import {
 } from "../errors/internal.js";
 import { getFragmentPaths } from "../utils/index.js";
 import { DEFAULT_OPTIONS } from "./constants.js";
-import { parseOptions } from "./parser.js";
+import { parseOptions, parseSchema } from "./parser.js";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
 import { assertValidConfiguration } from "./validator.js";
 
@@ -39,11 +39,11 @@ class ConfigManager {
     this.document = null;
   }
 
-  public init(schema: GraphQLSchema, options?: Options) {
-    this.schema = schema;
+  public init(schema: DocumentNode, options?: Options) {
+    this.schema = parseSchema(schema);
 
     if (options) {
-      assertValidConfiguration(schema, options);
+      assertValidConfiguration(this.schema, options);
       this.options = parseOptions(options as ValidatedOptions);
     }
 
@@ -103,14 +103,10 @@ class ConfigManager {
     }
     const fragmentPaths = getFragmentPaths(paths);
 
-    return this.options.fragments.filter((f) =>
-      fragmentPaths.includes(f.name.value)
-    );
+    return this.options.fragments.filter((f) => fragmentPaths.includes(f.name.value));
   }
 
-  public composeFragments(
-    fragments: FragmentDefinitionNode[]
-  ): FragmentSpreadNode[] {
+  public composeFragments(fragments: FragmentDefinitionNode[]): FragmentSpreadNode[] {
     return fragments.map((f) => ({
       kind: Kind.FRAGMENT_SPREAD,
       name: {
