@@ -12,12 +12,7 @@ import {
 
 import configManager from "./config/index.js";
 import { UnspecifiedSelectionsError } from "./errors/public.js";
-import {
-  getTypeConditionPaths,
-  hasFragmentPath,
-  splitPath,
-  splitPaths
-} from "./utils/index.js";
+import { getTypeConditionPaths, hasFragmentPath, splitPath, splitPaths } from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
 export default function pick(fieldPaths: string[]): string {
@@ -33,10 +28,7 @@ export default function pick(fieldPaths: string[]): string {
   const fragments = new Set<FragmentDefinitionNode>();
 
   for (const [field, paths] of rootPathMap) {
-    const [operation, operationFragments] = buildOperationNodeForPaths(
-      field,
-      paths
-    );
+    const [operation, operationFragments] = buildOperationNodeForPaths(field, paths);
     operations.push(operation);
     operationFragments.forEach((f) => fragments.add(f));
   }
@@ -58,7 +50,8 @@ function buildOperationNodeForPaths(
     schema,
     kind: OperationTypeNode.QUERY,
     field,
-    ...options.buildOperationNodeForFieldArgs
+    ...options.buildOperationNodeForFieldArgs,
+    depthLimit: fieldPathSplits.reduce((memo, fps) => Math.max(memo, fps.length), 0)
   });
   let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
@@ -95,7 +88,7 @@ function buildOperationNodeForPaths(
                   selection.typeCondition.name.value
                 );
                 toDelete = antiResolveMatch;
-                stayPut = antiResolveMatch;
+                stayPut = stayPut ?? antiResolveMatch;
               } else {
                 toDelete = !getTypeConditionPaths(paths).includes(
                   selection.typeCondition.name.value
@@ -112,10 +105,7 @@ function buildOperationNodeForPaths(
           (selectionSet.selections as SelectionNode[]).splice(j, 1);
         } else {
           hasFieldSelection = true;
-          if (
-            "selectionSet" in selection &&
-            selection.selectionSet?.selections
-          ) {
+          if ("selectionSet" in selection && selection.selectionSet?.selections) {
             selectionSets.push(selection.selectionSet);
           }
         }
