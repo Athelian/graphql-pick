@@ -177,7 +177,6 @@ function buildOperationAndCollectVariables({
       kind: Kind.SELECTION_SET,
       selections: [
         resolveField({
-          type,
           field,
           firstCall: true,
           path: [],
@@ -198,7 +197,6 @@ function resolveSelectionSet({
   selectedFields,
   rootTypeNames
 }: {
-  parent: GraphQLNamedType;
   type: GraphQLNamedType;
   path: string[];
   schema: GraphQLSchema;
@@ -225,7 +223,6 @@ function resolveSelectionSet({
               }
             },
             selectionSet: resolveSelectionSet({
-              parent: type,
               type: t,
               path,
               schema,
@@ -267,7 +264,6 @@ function resolveSelectionSet({
               }
             },
             selectionSet: resolveSelectionSet({
-              parent: type,
               type: t,
               path,
               schema,
@@ -292,7 +288,6 @@ function resolveSelectionSet({
             typeof selectedFields === "object" ? (selectedFields as any)[fieldName] : true;
           if (selectedSubFields) {
             return resolveField({
-              type,
               field: fields[fieldName],
               alias: selectedSubFields.kind === Kind.NAME ? selectedSubFields : undefined,
               path: [...path, fieldName],
@@ -363,7 +358,6 @@ function resolveVariable(arg: GraphQLArgument, name?: string): VariableDefinitio
 }
 
 function resolveField({
-  type,
   field,
   alias,
   firstCall,
@@ -372,7 +366,6 @@ function resolveField({
   selectedFields,
   rootTypeNames
 }: {
-  type: GraphQLObjectType;
   field: GraphQLField<any, any>;
   alias?: NameNode;
   path: string[];
@@ -426,7 +419,6 @@ function resolveField({
       },
       selectionSet:
         resolveSelectionSet({
-          parent: type,
           type: namedType,
           path: fieldPath,
           schema,
