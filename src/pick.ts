@@ -5,7 +5,6 @@ import {
   FragmentDefinitionNode,
   Kind,
   OperationDefinitionNode,
-  OperationTypeNode,
   VariableDefinitionNode
 } from "graphql";
 
@@ -56,7 +55,6 @@ function buildOperationNodeForPaths(field: string, fieldPaths: string[]): Operat
 
   const operationDefinition = buildOperationNodeForField({
     schema,
-    kind: OperationTypeNode.QUERY,
     field,
     selectedFields
   });

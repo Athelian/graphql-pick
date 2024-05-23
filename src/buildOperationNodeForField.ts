@@ -56,12 +56,10 @@ export type SelectedFields =
 
 export function buildOperationNodeForField({
   schema,
-  kind,
   field,
   selectedFields = true
 }: {
   schema: GraphQLSchema;
-  kind: OperationTypeNode;
   field: string;
   selectedFields?: SelectedFields;
 }) {
@@ -73,12 +71,11 @@ export function buildOperationNodeForField({
   const operationNode = buildOperationAndCollectVariables({
     schema,
     fieldName: field,
-    kind,
+    kind: OperationTypeNode.QUERY,
     selectedFields,
     rootTypeNames
   });
 
-  // attach variables
   (operationNode as any).variableDefinitions = [...operationVariables];
 
   resetOperationVariables();
@@ -137,7 +134,6 @@ function buildOperationAndCollectVariables({
 }
 
 function resolveSelectionSet({
-  parent,
   type,
   path,
   schema,
@@ -249,7 +245,6 @@ function resolveSelectionSet({
               field: fields[fieldName],
               path: [...path, fieldName],
               schema,
-              argNames,
               selectedFields: selectedSubFields,
               rootTypeNames
             });
@@ -321,7 +316,6 @@ function resolveField({
   firstCall,
   path,
   schema,
-  argNames,
   selectedFields,
   rootTypeNames
 }: {
@@ -331,7 +325,6 @@ function resolveField({
   firstCall?: boolean;
   schema: GraphQLSchema;
   selectedFields: SelectedFields;
-  argNames?: string[];
   rootTypeNames: Set<string>;
 }): SelectionNode {
   const namedType = getNamedType(field.type);
@@ -342,12 +335,6 @@ function resolveField({
     args = field.args
       .map<ArgumentNode>((arg) => {
         const argumentName = getArgumentName(arg.name, path);
-        if (argNames && !argNames.includes(argumentName)) {
-          if (isNonNullType(arg.type)) {
-            removeField = true;
-          }
-          return null as any;
-        }
         if (!firstCall) {
           addOperationVariable(resolveVariable(arg, argumentName));
         }
@@ -400,7 +387,6 @@ function resolveField({
           type: namedType,
           path: fieldPath,
           schema,
-          argNames,
           selectedFields,
           rootTypeNames
         }) || undefined,
