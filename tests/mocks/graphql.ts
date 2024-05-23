@@ -12,11 +12,13 @@ const typeDefs = loadSchemaSync(path.join(__dirname, "schema.graphql"), {
 
 const organizations: Organization[] = [
   {
+    __typename: "Organization",
     id: 1,
     name: "Acme Inc.",
     users: []
   },
   {
+    __typename: "Organization",
     id: 2,
     name: "Globex Corp.",
     users: []
@@ -25,10 +27,12 @@ const organizations: Organization[] = [
 
 const users: User[] = [
   {
+    __typename: "User",
     id: 1,
     name: "John Doe",
     age: 30,
     address: {
+      __typename: "Address",
       street: "123 Main St.",
       city: "Springfield",
       state: "IL",
@@ -38,10 +42,12 @@ const users: User[] = [
     previousOrganization: organizations[1]
   },
   {
+    __typename: "User",
     id: 2,
     name: "Jane Smith",
     age: 26,
     address: {
+      __typename: "Address",
       street: "456 Elm St.",
       city: "Springfield",
       state: "IL",
@@ -70,9 +76,14 @@ const resolver: IResolvers = {
       return organizations.find((o: any) => o.id === parseInt(id));
     }
   },
+  Model: {
+    __resolveType(obj: any) {
+      return obj.__typename;
+    }
+  },
   OrganizationPayload: {
-    __resolveType(obj: unknown) {
-      return "Organization";
+    __resolveType(obj: any) {
+      return obj.__typename;
     }
   }
 };

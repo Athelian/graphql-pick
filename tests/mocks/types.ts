@@ -1,4 +1,5 @@
 export type User = {
+  __typename: "User";
   id: number;
   name: string;
   age: number;
@@ -8,6 +9,7 @@ export type User = {
 };
 
 export type Address = {
+  __typename: "Address";
   street: string;
   city: string;
   state: string;
@@ -15,6 +17,7 @@ export type Address = {
 };
 
 export type Organization = {
+  __typename: "Organization";
   id: number;
   name: string;
   users: User[];

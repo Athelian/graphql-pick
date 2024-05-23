@@ -126,6 +126,28 @@ describe("pick without options", () => {
     );
   });
 
+  it("should inject variables", async () => {
+    const variables = {
+      id: 1
+    };
+    const expected = gql`
+      query user($id: ID!) {
+        user(id: $id) {
+          organization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick(["user.organization.name"]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected, variables);
+    const resultResponse = await getResponse(schemaWithMocks, result, variables);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
   it("should support field aliasing", async () => {
     const expected = gql`
       query {
