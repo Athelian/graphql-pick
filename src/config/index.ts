@@ -112,10 +112,6 @@ class ConfigManager {
   }
 
   public findFragmentByPath(path: string) {
-    if (!this.options.fragments) {
-      throw new FragmentsUninitializedError();
-    }
-
     return this.findFragmentByName(parseFragmentPath(path));
   }
 
