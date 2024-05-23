@@ -3,6 +3,7 @@ export type User = {
   id: number;
   name: string;
   age: number;
+  posts: Post[];
   address: Address;
   organization: Organization;
   previousOrganization: Organization;
@@ -21,4 +22,12 @@ export type Organization = {
   id: number;
   name: string;
   users: User[];
+};
+
+export type Post = {
+  __typename: "Post";
+  id: number;
+  ownedBy: User;
+  title: string;
+  content: string;
 };

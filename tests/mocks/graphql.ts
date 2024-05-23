@@ -4,7 +4,7 @@ import { addMocksToSchema } from "@graphql-tools/mock";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { IResolvers } from "@graphql-tools/utils";
 import path from "path";
-import { Organization, User } from "./types";
+import { Organization, Post, User } from "./types";
 
 const typeDefs = loadSchemaSync(path.join(__dirname, "schema.graphql"), {
   loaders: [new GraphQLFileLoader()]
@@ -38,6 +38,7 @@ const users: User[] = [
       state: "IL",
       zip: "62701"
     },
+    posts: [],
     organization: organizations[0],
     previousOrganization: organizations[1]
   },
@@ -53,11 +54,21 @@ const users: User[] = [
       state: "IL",
       zip: "62702"
     },
+    posts: [],
     organization: organizations[1],
     previousOrganization: organizations[0]
   }
 ];
 
+const post: Post = {
+  __typename: "Post",
+  id: 1,
+  ownedBy: users[0],
+  title: "Hello, World!",
+  content: "This is my first post."
+};
+
+users[0].posts.push(post);
 organizations[0].users.push(users[0]);
 organizations[1].users.push(users[1]);
 
@@ -82,6 +93,21 @@ const resolver: IResolvers = {
     }
   },
   OrganizationPayload: {
+    __resolveType(obj: any) {
+      return obj.__typename;
+    }
+  },
+  Owned: {
+    __resolveType(obj: any) {
+      return obj.__typename;
+    }
+  },
+  PostPayload: {
+    __resolveType(obj: any) {
+      return obj.__typename;
+    }
+  },
+  UserPayload: {
     __resolveType(obj: any) {
       return obj.__typename;
     }

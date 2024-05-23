@@ -217,6 +217,13 @@ describe("pick with fragment definitions", () => {
       id
     }
   `;
+  const ownedByNameFragment = gql`
+    fragment OwnedByName on Owned {
+      ownedBy {
+        name
+      }
+    }
+  `;
 
   afterEach(() => {
     reset();
@@ -267,6 +274,31 @@ describe("pick with fragment definitions", () => {
       ${modelIdFragment}
     `;
     const result = pick([`currentUser.__fragment_ModelId`]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
+  it("should pick fields by an interface fragment on a union", async () => {
+    init(schema, {
+      fragments: [ownedByNameFragment]
+    });
+
+    const expected = gql`
+      query {
+        currentUser {
+          posts {
+            ... on Post {
+              ...OwnedByName
+            }
+          }
+        }
+      }
+
+      ${ownedByNameFragment}
+    `;
+    const result = pick([`currentUser.posts.__fragment_OwnedByName`]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 

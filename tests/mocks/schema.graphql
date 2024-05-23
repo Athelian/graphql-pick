@@ -1,4 +1,6 @@
+union PostPayload = BadRequest | Forbidden | Post
 union OrganizationPayload = BadRequest | Forbidden | Organization
+union UserPayload = BadRequest | Forbidden | User
 
 type BadRequest {
   reason: String!
@@ -12,11 +14,22 @@ interface Model {
   id: ID!
 }
 
+interface Owned {
+  ownedBy: User!
+}
+
 type Address {
   street: String!
   city: String!
   state: String!
   zip: String!
+}
+
+type Post implements Model & Owned {
+  id: ID!
+  ownedBy: User!
+  title: String!
+  content: String!
 }
 
 type Organization implements Model {
@@ -31,6 +44,7 @@ type User implements Model {
   name: String!
   age: Int
   address: Address
+  posts: [PostPayload]
   organization: OrganizationPayload
   previousOrganization: OrganizationPayload
 }
