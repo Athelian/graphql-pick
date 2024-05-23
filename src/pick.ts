@@ -309,7 +309,10 @@ function resolveSelectionSet({
         .concat(
           selectedFragments.filter((f) => {
             const fragment = configManager.findFragmentByName(f.name.value);
-            return type.name === fragment?.typeCondition.name.value;
+            const fragmentName = fragment?.typeCondition.name.value;
+            if (!fragmentName) return;
+            const typeNames = [type.name, ...type.getInterfaces().map((i) => i.name)];
+            return typeNames.includes(fragmentName);
           })
         )
     };
