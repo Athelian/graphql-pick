@@ -148,22 +148,19 @@ function resolveSelectionSet({
   argNames?: string[];
   rootTypeNames: Set<string>;
 }): SelectionSetNode | void {
-  if (isUnionType(type)) {
-    const selectedFragments = Object.values(selectedFields)
-      .filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD)
-      .filter((sf) => {
-        const fragment = configManager.findFragmentByName(sf.name.value);
-        return (
-          fragment && type.getTypes().some((t) => t.name === fragment.typeCondition.name.value)
-        );
-      });
+  const fragments = getFragmentsFromSelectedFields(selectedFields);
 
+  if (isUnionType(type)) {
     const types = type.getTypes();
+    const selectedFragments = fragments.filter((f) => {
+      const fragment = configManager.findFragmentByName(f.name.value);
+      return fragment && type.getTypes().some((t) => t.name === fragment.typeCondition.name.value);
+    });
 
     return {
       kind: Kind.SELECTION_SET,
       selections: types
-        .map<InlineFragmentNode>((t) => {
+        .map<InlineFragmentNode | FragmentSpreadNode>((t) => {
           return {
             kind: Kind.INLINE_FRAGMENT,
             typeCondition: {
@@ -184,7 +181,10 @@ function resolveSelectionSet({
             }) as SelectionSetNode
           };
         })
-        .filter((fragmentNode) => fragmentNode?.selectionSet?.selections?.length > 0)
+        .filter(
+          (fragmentNode) =>
+            "selectionSet" in fragmentNode && fragmentNode?.selectionSet?.selections?.length > 0
+        )
         .concat(selectedFragments)
     };
   }
@@ -223,14 +223,11 @@ function resolveSelectionSet({
   }
 
   if (isObjectType(type) && !rootTypeNames.has(type.name)) {
-    const selectedFragments = Object.values(selectedFields)
-      .filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD)
-      .filter((sf) => {
-        const fragment = configManager.findFragmentByName(sf.name.value);
-        return type.name === fragment?.typeCondition.name.value;
-      });
-
     const fields = type.getFields();
+    const selectedFragments = fragments.filter((f) => {
+      const fragment = configManager.findFragmentByName(f.name.value);
+      return type.name === fragment?.typeCondition.name.value;
+    });
 
     return {
       kind: Kind.SELECTION_SET,
@@ -401,4 +398,8 @@ function resolveField({
     ...(fieldName !== field.name && { alias: { kind: Kind.NAME, value: fieldName } }),
     arguments: args
   };
+}
+
+function getFragmentsFromSelectedFields(selectedFields: SelectedFields): FragmentSpreadNode[] {
+  return Object.values(selectedFields).filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD);
 }
