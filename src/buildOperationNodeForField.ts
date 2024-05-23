@@ -56,11 +56,11 @@ export type SelectedFields =
 export function buildOperationNodeForField({
   schema,
   field,
-  selectedFields = true
+  selectedFields
 }: {
   schema: GraphQLSchema;
   field: string;
-  selectedFields?: SelectedFields;
+  selectedFields: SelectedFields;
 }) {
   resetOperationVariables();
   resetFieldMap();
@@ -278,7 +278,6 @@ function resolveVariable(arg: GraphQLArgument, name?: string): VariableDefinitio
     if (isNonNullType(type)) {
       return {
         kind: Kind.NON_NULL_TYPE,
-        // for v16 compatibility
         type: resolveVariableType(type.ofType) as any
       };
     }
