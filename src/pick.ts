@@ -173,19 +173,14 @@ function buildOperationAndCollectVariables({
       value: operationName
     },
     variableDefinitions: [],
-    selectionSet: {
-      kind: Kind.SELECTION_SET,
-      selections: [
-        resolveField({
-          field,
-          firstCall: true,
-          path: [],
-          schema,
-          selectedFields,
-          rootTypeNames
-        })
-      ]
-    }
+    selectionSet: resolveSelectionSet({
+      type: getNamedType(field.type),
+      path: [fieldName],
+      schema,
+      argNames: field.args.map((arg) => arg.name),
+      selectedFields,
+      rootTypeNames
+    }) as SelectionSetNode
   };
 }
 
