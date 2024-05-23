@@ -180,6 +180,11 @@ describe("pick with invalid options", () => {
 });
 
 describe("pick with fragment definitions", () => {
+  const modelIdFragment = gql`
+    fragment ModelId on Model {
+      id
+    }
+  `;
   const organizationNameFragment = gql`
     fragment OrganizationName on Organization {
       name
@@ -219,6 +224,27 @@ describe("pick with fragment definitions", () => {
       ${organizationNameFragment}
     `;
     const result = pick([`currentUser.organization.__fragment_OrganizationName`]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
+  it("should pick fields by an interface fragment", async () => {
+    init(schema, {
+      fragments: [modelIdFragment]
+    });
+
+    const expected = gql`
+      query {
+        currentUser {
+          ...ModelId
+        }
+      }
+
+      ${modelIdFragment}
+    `;
+    const result = pick([`currentUser.__fragment_ModelId`]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 
