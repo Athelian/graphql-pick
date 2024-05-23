@@ -47,7 +47,6 @@ function resetFieldMap() {
 
 export type Skip = string[];
 export type Force = string[];
-export type Ignore = string[];
 
 export type SelectedFields =
   | {
@@ -59,15 +58,11 @@ export function buildOperationNodeForField({
   schema,
   kind,
   field,
-  ignore = [],
-  argNames,
   selectedFields = true
 }: {
   schema: GraphQLSchema;
   kind: OperationTypeNode;
   field: string;
-  ignore?: Ignore;
-  argNames?: string[];
   selectedFields?: SelectedFields;
 }) {
   resetOperationVariables();
@@ -79,8 +74,6 @@ export function buildOperationNodeForField({
     schema,
     fieldName: field,
     kind,
-    ignore,
-    argNames,
     selectedFields,
     rootTypeNames
   });
@@ -98,16 +91,12 @@ function buildOperationAndCollectVariables({
   schema,
   fieldName,
   kind,
-  ignore,
-  argNames,
   selectedFields,
   rootTypeNames
 }: {
   schema: GraphQLSchema;
   fieldName: string;
   kind: OperationTypeNode;
-  ignore: Ignore;
-  argNames?: string[];
   selectedFields: SelectedFields;
   rootTypeNames: Set<string>;
 }): OperationDefinitionNode {
@@ -118,9 +107,7 @@ function buildOperationAndCollectVariables({
   if (field.args) {
     for (const arg of field.args) {
       const argName = arg.name;
-      if (!argNames || argNames.includes(argName)) {
-        addOperationVariable(resolveVariable(arg, argName));
-      }
+      addOperationVariable(resolveVariable(arg, argName));
     }
   }
 
@@ -140,9 +127,7 @@ function buildOperationAndCollectVariables({
           field,
           firstCall: true,
           path: [],
-          ignore,
           schema,
-          argNames,
           selectedFields,
           rootTypeNames
         })
@@ -155,7 +140,6 @@ function resolveSelectionSet({
   parent,
   type,
   path,
-  ignore,
   schema,
   argNames,
   selectedFields,
@@ -164,7 +148,6 @@ function resolveSelectionSet({
   parent: GraphQLNamedType;
   type: GraphQLNamedType;
   path: string[];
-  ignore: Ignore;
   schema: GraphQLSchema;
   selectedFields: SelectedFields;
   argNames?: string[];
@@ -199,7 +182,6 @@ function resolveSelectionSet({
               parent: type,
               type: t,
               path,
-              ignore,
               schema,
               argNames,
               selectedFields,
@@ -234,7 +216,6 @@ function resolveSelectionSet({
               parent: type,
               type: t,
               path,
-              ignore,
               schema,
               argNames,
               selectedFields,
@@ -247,8 +228,6 @@ function resolveSelectionSet({
   }
 
   if (isObjectType(type) && !rootTypeNames.has(type.name)) {
-    const isIgnored =
-      ignore.includes(type.name) || ignore.includes(`${parent.name}.${path[path.length - 1]}`);
     const selectedFragments = Object.values(selectedFields)
       .filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD)
       .filter((sf) => {
@@ -269,7 +248,6 @@ function resolveSelectionSet({
               type,
               field: fields[fieldName],
               path: [...path, fieldName],
-              ignore,
               schema,
               argNames,
               selectedFields: selectedSubFields,
@@ -342,7 +320,6 @@ function resolveField({
   field,
   firstCall,
   path,
-  ignore,
   schema,
   argNames,
   selectedFields,
@@ -352,7 +329,6 @@ function resolveField({
   field: GraphQLField<any, any>;
   path: string[];
   firstCall?: boolean;
-  ignore: Ignore;
   schema: GraphQLSchema;
   selectedFields: SelectedFields;
   argNames?: string[];
@@ -423,7 +399,6 @@ function resolveField({
           parent: type,
           type: namedType,
           path: fieldPath,
-          ignore,
           schema,
           argNames,
           selectedFields,
