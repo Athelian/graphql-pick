@@ -1,6 +1,7 @@
 import { getDefinedRootType, getRootTypeNames } from "@graphql-tools/utils";
 import {
   ArgumentNode,
+  FragmentSpreadNode,
   GraphQLArgument,
   GraphQLField,
   GraphQLInputType,
@@ -45,14 +46,12 @@ function resetFieldMap() {
   fieldTypeMap = new Map();
 }
 
-export type Skip = string[];
-export type Force = string[];
-
 export type SelectedFields =
   | {
       [key: string]: SelectedFields;
     }
-  | boolean;
+  | boolean
+  | FragmentSpreadNode;
 
 export function buildOperationNodeForField({
   schema,
@@ -238,7 +237,7 @@ function resolveSelectionSet({
       selections: Object.keys(fields)
         .map((fieldName) => {
           const selectedSubFields =
-            typeof selectedFields === "object" ? selectedFields[fieldName] : true;
+            typeof selectedFields === "object" ? (selectedFields as any)[fieldName] : true;
           if (selectedSubFields) {
             return resolveField({
               type,

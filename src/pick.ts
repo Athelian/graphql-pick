@@ -3,6 +3,7 @@ import { buildOperationNodeForField } from "./buildOperationNodeForField.js";
 import {
   DocumentNode,
   FragmentDefinitionNode,
+  FragmentSpreadNode,
   Kind,
   OperationDefinitionNode,
   VariableDefinitionNode
@@ -74,14 +75,15 @@ function createNestedJsonFromPaths(paths: string[]): Record<string, any> {
       if (isFragmentPath(part)) {
         const frag = configManager.findFragment(part);
         if (frag) {
-          current[part] = {
+          const node: FragmentSpreadNode = {
             kind: Kind.FRAGMENT_SPREAD,
             name: {
-              kind: "Name",
+              kind: Kind.NAME,
               value: parseFragmentPath(part)
             },
             directives: []
           };
+          current[part] = node;
           fragments.add(frag);
         }
       } else if (i === parts.length - 1) {
