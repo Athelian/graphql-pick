@@ -1,11 +1,17 @@
 {
   "name": "graphql-pick",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "license": "MIT",
   "author": "Eliot Austin-Forbes",
   "repository": "github:Athelian/graphql-pick",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "graphql",
+    "pick",
+    "query",
+    "builder"
+  ],
   "scripts": {
     "test": "jest",
     "build": "tsc",
