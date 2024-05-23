@@ -1,6 +1,6 @@
 {
   "name": "graphql-pick",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,6 @@
   "keywords": [],
   "author": "Eliot Austin-Forbes",
   "dependencies": {
-    "@graphql-tools/utils": "^10.2.0",
     "graphql": "^16.8.1"
   },
   "peerDependencies": {
