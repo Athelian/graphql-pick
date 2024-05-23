@@ -13,6 +13,7 @@ import {
   InlineFragmentNode,
   Kind,
   ListTypeNode,
+  NameNode,
   NonNullTypeNode,
   OperationDefinitionNode,
   OperationTypeNode,
@@ -232,6 +233,7 @@ function resolveSelectionSet({
             return resolveField({
               type,
               field: fields[fieldName],
+              alias: selectedSubFields.kind === Kind.NAME ? selectedSubFields : undefined,
               path: [...path, fieldName],
               schema,
               selectedFields: selectedSubFields,
@@ -301,6 +303,7 @@ function getArgumentName(name: string, path: string[]): string {
 function resolveField({
   type,
   field,
+  alias,
   firstCall,
   path,
   schema,
@@ -309,6 +312,7 @@ function resolveField({
 }: {
   type: GraphQLObjectType;
   field: GraphQLField<any, any>;
+  alias?: NameNode;
   path: string[];
   firstCall?: boolean;
   schema: GraphQLSchema;
@@ -350,7 +354,6 @@ function resolveField({
   }
 
   const fieldPath = [...path, field.name];
-  let fieldName = field.name;
 
   if (!isScalarType(namedType) && !isEnumType(namedType)) {
     return {
@@ -359,7 +362,6 @@ function resolveField({
         kind: Kind.NAME,
         value: field.name
       },
-      ...(fieldName !== field.name && { alias: { kind: Kind.NAME, value: fieldName } }),
       selectionSet:
         resolveSelectionSet({
           parent: type,
@@ -374,12 +376,12 @@ function resolveField({
   }
 
   return {
+    alias,
     kind: Kind.FIELD,
     name: {
       kind: Kind.NAME,
       value: field.name
     },
-    ...(fieldName !== field.name && { alias: { kind: Kind.NAME, value: fieldName } }),
     arguments: args
   };
 }

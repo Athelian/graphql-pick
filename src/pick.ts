@@ -5,12 +5,21 @@ import {
   FragmentDefinitionNode,
   FragmentSpreadNode,
   Kind,
+  NameNode,
   OperationDefinitionNode,
   VariableDefinitionNode
 } from "graphql";
 
 import configManager from "./config/index.js";
-import { isFragmentPath, parseFragmentPath, splitPath, splitPaths } from "./utils/index.js";
+import {
+  isAliasPath,
+  isFragmentPath,
+  normalizeAliasPath,
+  parseAliasPath,
+  parseFragmentPath,
+  splitPath,
+  splitPaths
+} from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
 let fragments: Set<FragmentDefinitionNode> = new Set();
@@ -85,6 +94,15 @@ function createNestedJsonFromPaths(paths: string[]): Record<string, any> {
           };
           current[part] = node;
           fragments.add(frag);
+        }
+      } else if (isAliasPath(part)) {
+        const alias = parseAliasPath(part);
+        if (alias) {
+          const node: NameNode = {
+            kind: Kind.NAME,
+            value: alias
+          };
+          current[normalizeAliasPath(part)] = node;
         }
       } else if (i === parts.length - 1) {
         current[part] = true;

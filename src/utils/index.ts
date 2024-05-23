@@ -17,7 +17,7 @@ export function splitPaths(paths: string[]) {
 
 //
 export function isAliasPath(path: string) {
-  return path.startsWith(TYPE_CONDITION_DELIMITER);
+  return path.startsWith(ALIAS_DELIMITER);
 }
 
 export function hasAliasPath(paths: string[]) {
