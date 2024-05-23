@@ -8,6 +8,10 @@ type Forbidden {
   reason: String!
 }
 
+type Model {
+  id: ID!
+}
+
 type Address {
   street: String!
   city: String!
@@ -15,14 +19,14 @@ type Address {
   zip: String!
 }
 
-type Organization {
+type Organization implements Model {
   id: ID!
   name: String!
   hasUser(id: ID!): Boolean
   users: [User]
 }
 
-type User {
+type User implements Model {
   id: ID!
   name: String!
   age: Int

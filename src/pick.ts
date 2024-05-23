@@ -1,166 +1,490 @@
-import { buildOperationNodeForField } from "@graphql-tools/utils";
+import { getDefinedRootType, getRootTypeNames } from "@graphql-tools/utils";
+import {
+  ArgumentNode,
+  GraphQLArgument,
+  GraphQLField,
+  GraphQLInputType,
+  GraphQLList,
+  GraphQLNamedType,
+  GraphQLNonNull,
+  GraphQLObjectType,
+  GraphQLSchema,
+  InlineFragmentNode,
+  ListTypeNode,
+  NonNullTypeNode,
+  OperationTypeNode,
+  SelectionNode,
+  SelectionSetNode,
+  TypeNode,
+  getNamedType,
+  isEnumType,
+  isInterfaceType,
+  isListType,
+  isNonNullType,
+  isObjectType,
+  isScalarType,
+  isUnionType
+} from "graphql";
 
 import {
   DocumentNode,
   FragmentDefinitionNode,
+  FragmentSpreadNode,
   Kind,
   NameNode,
   OperationDefinitionNode,
-  OperationTypeNode,
-  SelectionNode,
-  SelectionSetNode,
   VariableDefinitionNode
 } from "graphql";
 
 import configManager from "./config/index.js";
-import { UnspecifiedSelectionsError } from "./errors/public.js";
 import {
-  getTypeConditionPaths,
-  hasFragmentPath,
+  isAliasPath,
+  isFragmentPath,
+  joinPath,
   normalizeAliasPath,
   parseAliasPath,
+  parseFragmentPath,
   splitPath,
   splitPaths
 } from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
+let operations: OperationDefinitionNode[] = [];
+let operationFragments: Set<FragmentDefinitionNode> = new Set();
+let operationVariables: VariableDefinitionNode[] = [];
+
+function addOperation(operation: OperationDefinitionNode) {
+  operations.push(operation);
+}
+
+function addOperationVariable(variable: VariableDefinitionNode) {
+  operationVariables.push(variable);
+}
+
+function addOperationFragment(fragment: FragmentDefinitionNode) {
+  operationFragments.add(fragment);
+}
+
+function resetOperations() {
+  operations = [];
+}
+
+function resetOperationFragments() {
+  operationFragments = new Set();
+}
+
+function resetOperationVariables() {
+  operationVariables = [];
+}
+
+export type SelectedFields =
+  | {
+      [key: string]: SelectedFields;
+    }
+  | boolean
+  | FragmentSpreadNode
+  | NameNode;
+
 export default function pick(fieldPaths: string[]): DocumentNode {
+  assertValidPick(fieldPaths);
+
+  const schema = configManager.getSchema();
+
+  resetOperations();
+  resetOperationFragments();
+  resetOperationVariables();
+
   const rootPaths = new Set(splitPaths(fieldPaths).map((fps) => fps[0]));
   const rootPathMap = new Map<string, string[]>();
 
   for (const rootPath of rootPaths) {
-    const paths = fieldPaths.filter((p) => splitPath(p)[0] === rootPath);
+    const paths = fieldPaths
+      .filter((p) => rootPath === splitPath(p)[0])
+      .map((p) => joinPath(splitPath(p).slice(1)));
     rootPathMap.set(rootPath, paths);
   }
 
-  const operations = [];
-  const fragments = new Set<FragmentDefinitionNode>();
-
-  for (const [field, paths] of rootPathMap) {
-    const [operation, operationFragments] = buildOperationNodeForPaths(
-      field,
-      paths
+  for (const [field, fieldPaths] of rootPathMap) {
+    addOperation(
+      buildOperationNodeForField({
+        schema,
+        field,
+        selectedFields: getSelectedFieldsFromFieldPaths(fieldPaths)
+      })
     );
-    operations.push(operation);
-    operationFragments.forEach((f) => fragments.add(f));
   }
 
-  for (const operation of operations) {
-    if (operation.variableDefinitions) {
-      (operation.variableDefinitions as VariableDefinitionNode[]) =
-        operation.variableDefinitions?.filter((vd) => {
-          return !vd.variable.name.value.includes("_");
-        });
-    }
-  }
-
-  return configManager.composeDocument(operations, fragments);
+  return configManager.composeDocument(operations, operationFragments);
 }
 
-function buildOperationNodeForPaths(
-  field: string,
-  fieldPaths: string[]
-): [OperationDefinitionNode, Set<FragmentDefinitionNode>] {
-  assertValidPick(fieldPaths);
+function buildOperationNodeForField({
+  schema,
+  field,
+  selectedFields
+}: {
+  schema: GraphQLSchema;
+  field: string;
+  selectedFields: SelectedFields;
+}) {
+  const rootTypeNames = getRootTypeNames(schema);
 
-  const schema = configManager.getSchema();
-  const options = configManager.getOptions();
-
-  const fieldPathSplits = fieldPaths.map(splitPath);
-  const operationDefinition = buildOperationNodeForField({
+  const operationNode = buildOperationAndCollectVariables({
     schema,
+    fieldName: field,
     kind: OperationTypeNode.QUERY,
-    field,
-    ...options.buildOperationNodeForFieldArgs,
-    depthLimit: fieldPathSplits.reduce(
-      (memo, fps) => Math.max(memo, fps.length),
-      0
-    )
+    selectedFields,
+    rootTypeNames
   });
-  let operationFragments: Set<FragmentDefinitionNode> = new Set();
 
-  const selectionSets = [operationDefinition.selectionSet];
+  (operationNode as any).variableDefinitions = [...operationVariables];
 
-  let level = 0;
+  return operationNode;
+}
 
-  while (selectionSets.length) {
-    let hasFieldSelection = false;
-    let numSelectionSets = selectionSets.length;
-    let stayPut = false;
+function buildOperationAndCollectVariables({
+  schema,
+  fieldName,
+  kind,
+  selectedFields,
+  rootTypeNames
+}: {
+  schema: GraphQLSchema;
+  fieldName: string;
+  kind: OperationTypeNode;
+  selectedFields: SelectedFields;
+  rootTypeNames: Set<string>;
+}): OperationDefinitionNode {
+  const type = getDefinedRootType(schema, kind);
+  const field = type.getFields()[fieldName];
+  const operationName = `${fieldName}_${kind}`;
 
-    while (numSelectionSets-- !== 0) {
-      const paths = fieldPathSplits.map((fps) => fps[level]).filter(Boolean);
-      const selectionSet = selectionSets.shift() as SelectionSetNode;
-
-      if (hasFragmentPath(paths)) {
-        const fragments = configManager.findFragments(paths);
-        fragments.forEach((f) => operationFragments.add(f));
-        (selectionSet.selections as SelectionNode[]).push(
-          ...configManager.composeFragments(fragments)
-        );
-      }
-
-      for (let j = selectionSet.selections.length - 1; j >= 0; j--) {
-        let selection = selectionSet.selections[j];
-        let toDelete = false;
-
-        switch (selection.kind) {
-          case Kind.INLINE_FRAGMENT:
-            if (selection.typeCondition?.kind === Kind.NAMED_TYPE) {
-              if (options.noResolve) {
-                const antiResolveMatch = options.noResolve.includes(
-                  selection.typeCondition.name.value
-                );
-                toDelete = antiResolveMatch;
-                stayPut = stayPut || antiResolveMatch;
-              } else {
-                toDelete = !getTypeConditionPaths(paths).includes(
-                  selection.typeCondition.name.value
-                );
-              }
-            }
-            break;
-          case Kind.FIELD:
-            const normalizedPaths = paths.map(normalizeAliasPath);
-            const indexOf = normalizedPaths.indexOf(selection.name.value);
-
-            if (indexOf === -1) {
-              toDelete = true;
-            } else if (paths[indexOf] !== normalizedPaths[indexOf]) {
-              const alias = parseAliasPath(paths[indexOf]);
-              if (alias) {
-                (selection as { alias: NameNode }).alias = {
-                  kind: Kind.NAME,
-                  value: alias
-                };
-              }
-            }
-
-            break;
-        }
-
-        if (toDelete) {
-          (selectionSet.selections as SelectionNode[]).splice(j, 1);
-        } else {
-          hasFieldSelection = true;
-          if (
-            "selectionSet" in selection &&
-            selection.selectionSet?.selections
-          ) {
-            selectionSets.push(selection.selectionSet);
-          }
-        }
-      }
-    }
-
-    if (hasFieldSelection === false) {
-      throw new UnspecifiedSelectionsError();
-    }
-
-    if (!stayPut) {
-      level++;
+  if (field.args) {
+    for (const arg of field.args) {
+      const argName = arg.name;
+      addOperationVariable(resolveVariable(arg, argName));
     }
   }
 
-  return [operationDefinition, operationFragments];
+  return {
+    kind: Kind.OPERATION_DEFINITION,
+    operation: kind,
+    name: {
+      kind: Kind.NAME,
+      value: operationName
+    },
+    variableDefinitions: [],
+    selectionSet: resolveSelectionSet({
+      type: getNamedType(field.type),
+      path: [fieldName],
+      schema,
+      argNames: field.args.map((arg) => arg.name),
+      selectedFields,
+      rootTypeNames
+    }) as SelectionSetNode
+  };
+}
+
+function resolveSelectionSet({
+  type,
+  path,
+  schema,
+  argNames,
+  selectedFields,
+  rootTypeNames
+}: {
+  type: GraphQLNamedType;
+  path: string[];
+  schema: GraphQLSchema;
+  selectedFields: SelectedFields;
+  argNames?: string[];
+  rootTypeNames: Set<string>;
+}): SelectionSetNode | void {
+  const selectedFragments = getFragmentSpreadsFromSelectedFields(selectedFields);
+
+  if (isUnionType(type)) {
+    const types = type.getTypes();
+
+    return {
+      kind: Kind.SELECTION_SET,
+      selections: types
+        .map<InlineFragmentNode | FragmentSpreadNode>((t) => {
+          return {
+            kind: Kind.INLINE_FRAGMENT,
+            typeCondition: {
+              kind: Kind.NAMED_TYPE,
+              name: {
+                kind: Kind.NAME,
+                value: t.name
+              }
+            },
+            selectionSet: resolveSelectionSet({
+              type: t,
+              path,
+              schema,
+              argNames,
+              selectedFields,
+              rootTypeNames
+            }) as SelectionSetNode
+          };
+        })
+        .filter(
+          (fragmentNode) =>
+            "selectionSet" in fragmentNode && fragmentNode?.selectionSet?.selections?.length > 0
+        )
+        .concat(
+          selectedFragments.filter((f) => {
+            const fragment = configManager.findFragmentByName(f.name.value);
+            return type.getTypes().some((t) => t.name === fragment?.typeCondition.name.value);
+          })
+        )
+    };
+  }
+
+  if (isInterfaceType(type)) {
+    const types = Object.values(schema.getTypeMap()).filter(
+      (t: any) => isObjectType(t) && t.getInterfaces().includes(type)
+    ) as GraphQLObjectType[];
+
+    return {
+      kind: Kind.SELECTION_SET,
+      selections: types
+        .map<InlineFragmentNode>((t) => {
+          return {
+            kind: Kind.INLINE_FRAGMENT,
+            typeCondition: {
+              kind: Kind.NAMED_TYPE,
+              name: {
+                kind: Kind.NAME,
+                value: t.name
+              }
+            },
+            selectionSet: resolveSelectionSet({
+              type: t,
+              path,
+              schema,
+              argNames,
+              selectedFields,
+              rootTypeNames
+            }) as SelectionSetNode
+          };
+        })
+        .filter((fragmentNode) => fragmentNode?.selectionSet?.selections?.length > 0)
+    };
+  }
+
+  if (isObjectType(type) && !rootTypeNames.has(type.name)) {
+    const fields = type.getFields();
+
+    return {
+      kind: Kind.SELECTION_SET,
+      selections: Object.keys(fields)
+        .map((fieldName) => {
+          const selectedSubFields =
+            typeof selectedFields === "object" ? (selectedFields as any)[fieldName] : true;
+          if (selectedSubFields) {
+            return resolveField({
+              field: fields[fieldName],
+              alias: selectedSubFields.kind === Kind.NAME ? selectedSubFields : undefined,
+              path: [...path, fieldName],
+              schema,
+              selectedFields: selectedSubFields,
+              rootTypeNames
+            });
+          }
+          return null;
+        })
+        .filter((f): f is SelectionNode => {
+          if (f == null) {
+            return false;
+          } else if ("selectionSet" in f) {
+            return !!f.selectionSet?.selections?.length;
+          }
+          return true;
+        })
+        .concat(
+          selectedFragments.filter((f) => {
+            const fragment = configManager.findFragmentByName(f.name.value);
+            return type.name === fragment?.typeCondition.name.value;
+          })
+        )
+    };
+  }
+}
+
+function resolveVariable(arg: GraphQLArgument, name?: string): VariableDefinitionNode {
+  function resolveVariableType(type: GraphQLList<any>): ListTypeNode;
+  function resolveVariableType(type: GraphQLNonNull<any>): NonNullTypeNode;
+  function resolveVariableType(type: GraphQLInputType): TypeNode;
+  function resolveVariableType(type: GraphQLInputType): TypeNode {
+    if (isListType(type)) {
+      return {
+        kind: Kind.LIST_TYPE,
+        type: resolveVariableType(type.ofType)
+      };
+    }
+
+    if (isNonNullType(type)) {
+      return {
+        kind: Kind.NON_NULL_TYPE,
+        type: resolveVariableType(type.ofType) as any
+      };
+    }
+
+    return {
+      kind: Kind.NAMED_TYPE,
+      name: {
+        kind: Kind.NAME,
+        value: type.name
+      }
+    };
+  }
+
+  return {
+    kind: Kind.VARIABLE_DEFINITION,
+    variable: {
+      kind: Kind.VARIABLE,
+      name: {
+        kind: Kind.NAME,
+        value: name || arg.name
+      }
+    },
+    type: resolveVariableType(arg.type)
+  };
+}
+
+function resolveField({
+  field,
+  alias,
+  firstCall,
+  path,
+  schema,
+  selectedFields,
+  rootTypeNames
+}: {
+  field: GraphQLField<any, any>;
+  alias?: NameNode;
+  path: string[];
+  firstCall?: boolean;
+  schema: GraphQLSchema;
+  selectedFields: SelectedFields;
+  rootTypeNames: Set<string>;
+}): SelectionNode {
+  const namedType = getNamedType(field.type);
+  let args: ArgumentNode[] = [];
+  let removeField = false;
+
+  if (field.args && field.args.length) {
+    args = field.args
+      .map<ArgumentNode>((arg) => {
+        const argumentName = getArgumentName(arg.name, path);
+        if (!firstCall) {
+          addOperationVariable(resolveVariable(arg, argumentName));
+        }
+
+        return {
+          kind: Kind.ARGUMENT,
+          name: {
+            kind: Kind.NAME,
+            value: arg.name
+          },
+          value: {
+            kind: Kind.VARIABLE,
+            name: {
+              kind: Kind.NAME,
+              value: getArgumentName(arg.name, path)
+            }
+          }
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (removeField) {
+    return null as any;
+  }
+
+  const fieldPath = [...path, field.name];
+
+  if (!isScalarType(namedType) && !isEnumType(namedType)) {
+    return {
+      kind: Kind.FIELD,
+      name: {
+        kind: Kind.NAME,
+        value: field.name
+      },
+      selectionSet:
+        resolveSelectionSet({
+          type: namedType,
+          path: fieldPath,
+          schema,
+          selectedFields,
+          rootTypeNames
+        }) || undefined,
+      arguments: args
+    };
+  }
+
+  return {
+    alias,
+    kind: Kind.FIELD,
+    name: {
+      kind: Kind.NAME,
+      value: field.name
+    },
+    arguments: args
+  };
+}
+
+function getArgumentName(name: string, path: string[]): string {
+  return [...path, name].join("_");
+}
+
+function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
+  const result: Record<string, any> = {};
+
+  for (const path of fieldPaths) {
+    let current = result;
+    const paths = splitPath(path);
+
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i];
+      if (isFragmentPath(path)) {
+        const fragment = configManager.findFragmentByPath(path);
+        if (fragment) {
+          addOperationFragment(fragment);
+          const node: FragmentSpreadNode = {
+            kind: Kind.FRAGMENT_SPREAD,
+            name: {
+              kind: Kind.NAME,
+              value: parseFragmentPath(path)
+            },
+            directives: []
+          };
+          current[path] = node;
+        }
+      } else if (isAliasPath(path)) {
+        const alias = parseAliasPath(path) as string;
+        const node: NameNode = {
+          kind: Kind.NAME,
+          value: alias
+        };
+        current[normalizeAliasPath(path)] = node;
+      } else if (i === paths.length - 1) {
+        current[path] = true;
+      } else {
+        if (!current[path]) {
+          current[path] = {};
+        }
+        current = current[path];
+      }
+    }
+  }
+
+  return result;
+}
+
+function getFragmentSpreadsFromSelectedFields(
+  selectedFields: SelectedFields
+): FragmentSpreadNode[] {
+  return Object.values(selectedFields).filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD);
 }

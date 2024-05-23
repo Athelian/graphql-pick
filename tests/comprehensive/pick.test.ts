@@ -22,11 +22,7 @@ describe("pick", () => {
 
   beforeAll(() => {
     init(schema, {
-      noResolve: ["BadRequest", "Forbidden"],
-      fragments: [userFragment, organizationFragments],
-      buildOperationNodeForFieldArgs: {
-        circularReferenceDepth: 2
-      }
+      fragments: [userFragment, organizationFragments]
     });
   });
 
@@ -38,7 +34,9 @@ describe("pick", () => {
           id
         }
         currentUser {
-          id
+          ... on Model {
+            id
+          }
           ...UserFields
           organization {
             ...OrganizationId
@@ -62,6 +60,7 @@ describe("pick", () => {
       "user.id",
       "currentUser.id",
       "currentUser.__fragment_UserFields",
+      "currentUser.__fragment_ModelId",
       "users.__fragment_UserFields",
       "currentUser.organization.__fragment_OrganizationId",
       "currentUser.organization.__fragment_OrganizationName",
@@ -69,16 +68,8 @@ describe("pick", () => {
       "currentUser.organization.users.__fragment_UserFields"
     ]);
 
-    const expectedResponse = await getResponse(
-      schemaWithMocks,
-      expected,
-      variables
-    );
-    const resultResponse = await getResponse(
-      schemaWithMocks,
-      result,
-      variables
-    );
+    const expectedResponse = await getResponse(schemaWithMocks, expected, variables);
+    const resultResponse = await getResponse(schemaWithMocks, result, variables);
 
     expect(resultResponse).toEqual(expectedResponse);
   });
