@@ -155,7 +155,6 @@ function buildOperationAndCollectVariables({
 function resolveSelectionSet({
   parent,
   type,
-  firstCall,
   path,
   ancestors,
   ignore,
@@ -168,7 +167,6 @@ function resolveSelectionSet({
   type: GraphQLNamedType;
   path: string[];
   ancestors: GraphQLNamedType[];
-  firstCall?: boolean;
   ignore: Ignore;
   schema: GraphQLSchema;
   selectedFields: SelectedFields;
@@ -432,7 +430,6 @@ function resolveField({
         resolveSelectionSet({
           parent: type,
           type: namedType,
-          firstCall,
           path: fieldPath,
           ancestors: [...ancestors, type],
           ignore,
