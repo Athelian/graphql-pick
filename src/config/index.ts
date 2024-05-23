@@ -12,6 +12,7 @@ import {
   FragmentsUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal.js";
+import { UnmatchedFragmentDefinitionError } from "../errors/public.js";
 import { parseFragmentPath } from "../utils/index.js";
 import { DEFAULT_OPTIONS } from "./constants.js";
 import { parseOptions } from "./parser.js";
@@ -101,8 +102,13 @@ class ConfigManager {
     if (!this.options.fragments) {
       throw new FragmentsUninitializedError();
     }
+    const fragment = this.options.fragments.find((f) => name === f.name.value);
 
-    return this.options.fragments.find((f) => name === f.name.value);
+    if (!fragment) {
+      throw new UnmatchedFragmentDefinitionError();
+    }
+
+    return fragment;
   }
 
   public findFragmentByPath(path: string) {
