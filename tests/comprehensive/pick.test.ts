@@ -5,10 +5,9 @@ import schemaWithMocks, { schema } from "../mocks/graphql";
 import { getResponse } from "../utils/index";
 
 describe("pick", () => {
-  const userFragment = gql`
-    fragment UserFields on User {
-      name
-      age
+  const modelFragment = gql`
+    fragment ModelId on Model {
+      id
     }
   `;
   const organizationFragments = gql`
@@ -19,10 +18,16 @@ describe("pick", () => {
       id
     }
   `;
+  const userFragment = gql`
+    fragment UserFields on User {
+      name
+      age
+    }
+  `;
 
   beforeAll(() => {
     init(schema, {
-      fragments: [userFragment, organizationFragments]
+      fragments: [modelFragment, organizationFragments, userFragment]
     });
   });
 
@@ -34,9 +39,7 @@ describe("pick", () => {
           id
         }
         currentUser {
-          ... on Model {
-            id
-          }
+          ...ModelId
           ...UserFields
           organization {
             ...OrganizationId
@@ -53,8 +56,9 @@ describe("pick", () => {
           ...UserFields
         }
       }
-      ${userFragment}
+      ${modelFragment}
       ${organizationFragments}
+      ${userFragment}
     `;
     const result = pick([
       "user.id",
