@@ -59,7 +59,6 @@ export function buildOperationNodeForField({
   schema,
   kind,
   field,
-  models,
   ignore = [],
   argNames,
   selectedFields = true
@@ -67,7 +66,6 @@ export function buildOperationNodeForField({
   schema: GraphQLSchema;
   kind: OperationTypeNode;
   field: string;
-  models?: string[];
   ignore?: Ignore;
   argNames?: string[];
   selectedFields?: SelectedFields;
@@ -81,7 +79,6 @@ export function buildOperationNodeForField({
     schema,
     fieldName: field,
     kind,
-    models: models || [],
     ignore,
     argNames,
     selectedFields,
@@ -101,7 +98,6 @@ function buildOperationAndCollectVariables({
   schema,
   fieldName,
   kind,
-  models,
   ignore,
   argNames,
   selectedFields,
@@ -110,7 +106,6 @@ function buildOperationAndCollectVariables({
   schema: GraphQLSchema;
   fieldName: string;
   kind: OperationTypeNode;
-  models: string[];
   ignore: Ignore;
   argNames?: string[];
   selectedFields: SelectedFields;
@@ -143,7 +138,6 @@ function buildOperationAndCollectVariables({
         resolveField({
           type,
           field,
-          models,
           firstCall: true,
           path: [],
           ancestors: [],
@@ -161,7 +155,6 @@ function buildOperationAndCollectVariables({
 function resolveSelectionSet({
   parent,
   type,
-  models,
   firstCall,
   path,
   ancestors,
@@ -173,7 +166,6 @@ function resolveSelectionSet({
 }: {
   parent: GraphQLNamedType;
   type: GraphQLNamedType;
-  models: string[];
   path: string[];
   ancestors: GraphQLNamedType[];
   firstCall?: boolean;
@@ -211,7 +203,6 @@ function resolveSelectionSet({
             selectionSet: resolveSelectionSet({
               parent: type,
               type: t,
-              models,
               path,
               ancestors,
               ignore,
@@ -248,7 +239,6 @@ function resolveSelectionSet({
             selectionSet: resolveSelectionSet({
               parent: type,
               type: t,
-              models,
               path,
               ancestors,
               ignore,
@@ -266,28 +256,12 @@ function resolveSelectionSet({
   if (isObjectType(type) && !rootTypeNames.has(type.name)) {
     const isIgnored =
       ignore.includes(type.name) || ignore.includes(`${parent.name}.${path[path.length - 1]}`);
-    const isModel = models.includes(type.name);
     const selectedFragments = Object.values(selectedFields)
       .filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD)
       .filter((sf) => {
         const fragment = configManager.findFragmentByName(sf.name.value);
         return type.name === fragment?.typeCondition.name.value;
       });
-
-    if (!firstCall && isModel && !isIgnored) {
-      return {
-        kind: Kind.SELECTION_SET,
-        selections: [
-          {
-            kind: Kind.FIELD,
-            name: {
-              kind: Kind.NAME,
-              value: "id"
-            }
-          }
-        ]
-      };
-    }
 
     const fields = type.getFields();
 
@@ -301,7 +275,6 @@ function resolveSelectionSet({
             return resolveField({
               type,
               field: fields[fieldName],
-              models,
               path: [...path, fieldName],
               ancestors,
               ignore,
@@ -375,7 +348,6 @@ function getArgumentName(name: string, path: string[]): string {
 function resolveField({
   type,
   field,
-  models,
   firstCall,
   path,
   ancestors,
@@ -387,7 +359,6 @@ function resolveField({
 }: {
   type: GraphQLObjectType;
   field: GraphQLField<any, any>;
-  models: string[];
   path: string[];
   ancestors: GraphQLNamedType[];
   firstCall?: boolean;
@@ -461,7 +432,6 @@ function resolveField({
         resolveSelectionSet({
           parent: type,
           type: namedType,
-          models,
           firstCall,
           path: fieldPath,
           ancestors: [...ancestors, type],
