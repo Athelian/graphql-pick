@@ -23,6 +23,7 @@
     "@graphql-tools/load": "^8.0.2",
     "@graphql-tools/mock": "^9.0.2",
     "@graphql-tools/schema": "^10.0.3",
+    "@graphql-tools/utils": "^10.2.0",
     "@types/graphql": "^14.5.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.12",
