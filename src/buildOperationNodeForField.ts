@@ -140,7 +140,6 @@ function buildOperationAndCollectVariables({
           field,
           firstCall: true,
           path: [],
-          ancestors: [],
           ignore,
           schema,
           argNames,
@@ -156,7 +155,6 @@ function resolveSelectionSet({
   parent,
   type,
   path,
-  ancestors,
   ignore,
   schema,
   argNames,
@@ -166,7 +164,6 @@ function resolveSelectionSet({
   parent: GraphQLNamedType;
   type: GraphQLNamedType;
   path: string[];
-  ancestors: GraphQLNamedType[];
   ignore: Ignore;
   schema: GraphQLSchema;
   selectedFields: SelectedFields;
@@ -202,7 +199,6 @@ function resolveSelectionSet({
               parent: type,
               type: t,
               path,
-              ancestors,
               ignore,
               schema,
               argNames,
@@ -238,7 +234,6 @@ function resolveSelectionSet({
               parent: type,
               type: t,
               path,
-              ancestors,
               ignore,
               schema,
               argNames,
@@ -274,7 +269,6 @@ function resolveSelectionSet({
               type,
               field: fields[fieldName],
               path: [...path, fieldName],
-              ancestors,
               ignore,
               schema,
               argNames,
@@ -348,7 +342,6 @@ function resolveField({
   field,
   firstCall,
   path,
-  ancestors,
   ignore,
   schema,
   argNames,
@@ -358,7 +351,6 @@ function resolveField({
   type: GraphQLObjectType;
   field: GraphQLField<any, any>;
   path: string[];
-  ancestors: GraphQLNamedType[];
   firstCall?: boolean;
   ignore: Ignore;
   schema: GraphQLSchema;
@@ -431,7 +423,6 @@ function resolveField({
           parent: type,
           type: namedType,
           path: fieldPath,
-          ancestors: [...ancestors, type],
           ignore,
           schema,
           argNames,
