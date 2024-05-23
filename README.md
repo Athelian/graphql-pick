@@ -100,3 +100,8 @@ const query = pick(["currentUser.__alias_fullname_name"])
 const theSameQuery = pick([`currentUser.${wrapAlias("fullname", "name")}`])
 ```
 
+## Acknowledgements
+
+This package was developed with reference to [graphql-tools](https://github.com/ardatan/graphql-tools). The original project is licensed under the MIT license.
+
+
