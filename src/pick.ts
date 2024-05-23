@@ -40,6 +40,7 @@ import configManager from "./config/index.js";
 import {
   isAliasPath,
   isFragmentPath,
+  joinPath,
   normalizeAliasPath,
   parseAliasPath,
   parseFragmentPath,
@@ -48,19 +49,32 @@ import {
 } from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
-let fragments: Set<FragmentDefinitionNode> = new Set();
+let operations: OperationDefinitionNode[] = [];
+let operationFragments: Set<FragmentDefinitionNode> = new Set();
 let operationVariables: VariableDefinitionNode[] = [];
+
+function addOperation(operation: OperationDefinitionNode) {
+  operations.push(operation);
+}
 
 function addOperationVariable(variable: VariableDefinitionNode) {
   operationVariables.push(variable);
 }
 
-function resetOperationVariables() {
-  operationVariables = [];
+function addOperationFragment(fragment: FragmentDefinitionNode) {
+  operationFragments.add(fragment);
 }
 
-function resetFragments() {
-  fragments = new Set();
+function resetOperations() {
+  operations = [];
+}
+
+function resetOperationFragments() {
+  operationFragments = new Set();
+}
+
+function resetOperationVariables() {
+  operationVariables = [];
 }
 
 export type SelectedFields =
@@ -74,49 +88,33 @@ export type SelectedFields =
 export default function pick(fieldPaths: string[]): DocumentNode {
   assertValidPick(fieldPaths);
 
-  fragments = new Set();
+  const schema = configManager.getSchema();
+
+  resetOperations();
+  resetOperationFragments();
+  resetOperationVariables();
+
   const rootPaths = new Set(splitPaths(fieldPaths).map((fps) => fps[0]));
   const rootPathMap = new Map<string, string[]>();
 
   for (const rootPath of rootPaths) {
-    const paths = fieldPaths.filter((p) => splitPath(p)[0] === rootPath);
-    rootPathMap.set(
-      rootPath,
-      paths.map((p) => p.split(".").slice(1).join("."))
+    const paths = fieldPaths
+      .filter((p) => rootPath === splitPath(p)[0])
+      .map((p) => joinPath(splitPath(p).slice(1)));
+    rootPathMap.set(rootPath, paths);
+  }
+
+  for (const [field, fieldPaths] of rootPathMap) {
+    addOperation(
+      buildOperationNodeForField({
+        schema,
+        field,
+        selectedFields: getSelectedFieldsFromFieldPaths(fieldPaths)
+      })
     );
   }
 
-  const operations = [];
-
-  for (const [field, fieldPaths] of rootPathMap) {
-    const operation = buildOperationNodeForPaths(field, fieldPaths);
-    operations.push(operation);
-  }
-
-  for (const operation of operations) {
-    if (operation.variableDefinitions) {
-      (operation.variableDefinitions as VariableDefinitionNode[]) =
-        operation.variableDefinitions?.filter((vd) => {
-          return !vd.variable.name.value.includes("_");
-        });
-    }
-  }
-
-  return configManager.composeDocument(operations, fragments);
-}
-
-function buildOperationNodeForPaths(field: string, fieldPaths: string[]): OperationDefinitionNode {
-  const schema = configManager.getSchema();
-
-  const selectedFields = getSelectedFieldsFromFieldPaths(fieldPaths);
-
-  const operationDefinition = buildOperationNodeForField({
-    schema,
-    field,
-    selectedFields
-  });
-
-  return operationDefinition;
+  return configManager.composeDocument(operations, operationFragments);
 }
 
 function buildOperationNodeForField({
@@ -128,9 +126,6 @@ function buildOperationNodeForField({
   field: string;
   selectedFields: SelectedFields;
 }) {
-  resetOperationVariables();
-  resetFragments();
-
   const rootTypeNames = getRootTypeNames(schema);
 
   const operationNode = buildOperationAndCollectVariables({
@@ -142,8 +137,6 @@ function buildOperationNodeForField({
   });
 
   (operationNode as any).variableDefinitions = [...operationVariables];
-
-  resetOperationVariables();
 
   return operationNode;
 }
@@ -213,14 +206,10 @@ function resolveSelectionSet({
   argNames?: string[];
   rootTypeNames: Set<string>;
 }): SelectionSetNode | void {
-  const selectedFragments = getFragmentsFromSelectedFields(selectedFields);
+  const selectedFragments = getFragmentSpreadsFromSelectedFields(selectedFields);
 
   if (isUnionType(type)) {
     const types = type.getTypes();
-    const applicableFragments = selectedFragments.filter((f) => {
-      const fragment = configManager.findFragmentByName(f.name.value);
-      return fragment && type.getTypes().some((t) => t.name === fragment.typeCondition.name.value);
-    });
 
     return {
       kind: Kind.SELECTION_SET,
@@ -250,7 +239,12 @@ function resolveSelectionSet({
           (fragmentNode) =>
             "selectionSet" in fragmentNode && fragmentNode?.selectionSet?.selections?.length > 0
         )
-        .concat(applicableFragments)
+        .concat(
+          selectedFragments.filter((f) => {
+            const fragment = configManager.findFragmentByName(f.name.value);
+            return type.getTypes().some((t) => t.name === fragment?.typeCondition.name.value);
+          })
+        )
     };
   }
 
@@ -289,10 +283,6 @@ function resolveSelectionSet({
 
   if (isObjectType(type) && !rootTypeNames.has(type.name)) {
     const fields = type.getFields();
-    const applicableFragments = selectedFragments.filter((f) => {
-      const fragment = configManager.findFragmentByName(f.name.value);
-      return type.name === fragment?.typeCondition.name.value;
-    });
 
     return {
       kind: Kind.SELECTION_SET,
@@ -321,7 +311,12 @@ function resolveSelectionSet({
           }
           return true;
         })
-        .concat(applicableFragments)
+        .concat(
+          selectedFragments.filter((f) => {
+            const fragment = configManager.findFragmentByName(f.name.value);
+            return type.name === fragment?.typeCondition.name.value;
+          })
+        )
     };
   }
 }
@@ -461,23 +456,24 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
   const result: Record<string, any> = {};
 
   for (const path of fieldPaths) {
-    const paths = splitPath(path);
     let current = result;
+    const paths = splitPath(path);
 
     for (let i = 0; i < paths.length; i++) {
       const path = paths[i];
       if (isFragmentPath(path)) {
-        const frag = configManager.findFragmentByPath(path);
-        if (frag) {
-          fragments.add(frag);
-          current[path] = {
+        const fragment = configManager.findFragmentByPath(path);
+        if (fragment) {
+          addOperationFragment(fragment);
+          const node: FragmentSpreadNode = {
             kind: Kind.FRAGMENT_SPREAD,
             name: {
               kind: Kind.NAME,
               value: parseFragmentPath(path)
             },
             directives: []
-          } as FragmentSpreadNode;
+          };
+          current[path] = node;
         }
       } else if (isAliasPath(path)) {
         const alias = parseAliasPath(path) as string;
@@ -500,6 +496,8 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
   return result;
 }
 
-function getFragmentsFromSelectedFields(selectedFields: SelectedFields): FragmentSpreadNode[] {
+function getFragmentSpreadsFromSelectedFields(
+  selectedFields: SelectedFields
+): FragmentSpreadNode[] {
   return Object.values(selectedFields).filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD);
 }

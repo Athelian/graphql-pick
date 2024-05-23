@@ -14,6 +14,10 @@ export function splitPaths(paths: string[]) {
   return paths.map(splitPath);
 }
 
+export function joinPath(path: string[]) {
+  return path.join(PATH_SEPARATOR);
+}
+
 //
 export function isAliasPath(path: string) {
   return path.startsWith(ALIAS_DELIMITER);
