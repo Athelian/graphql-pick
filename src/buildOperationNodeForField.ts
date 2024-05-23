@@ -62,7 +62,6 @@ export function buildOperationNodeForField({
   models,
   ignore = [],
   depthLimit,
-  circularReferenceDepth,
   argNames,
   selectedFields = true
 }: {
@@ -72,7 +71,6 @@ export function buildOperationNodeForField({
   models?: string[];
   ignore?: Ignore;
   depthLimit?: number;
-  circularReferenceDepth?: number;
   argNames?: string[];
   selectedFields?: SelectedFields;
 }) {
@@ -88,7 +86,6 @@ export function buildOperationNodeForField({
     models: models || [],
     ignore,
     depthLimit: depthLimit || Infinity,
-    circularReferenceDepth: circularReferenceDepth || 1,
     argNames,
     selectedFields,
     rootTypeNames
@@ -110,7 +107,6 @@ function buildOperationAndCollectVariables({
   models,
   ignore,
   depthLimit,
-  circularReferenceDepth,
   argNames,
   selectedFields,
   rootTypeNames
@@ -121,7 +117,6 @@ function buildOperationAndCollectVariables({
   models: string[];
   ignore: Ignore;
   depthLimit: number;
-  circularReferenceDepth: number;
   argNames?: string[];
   selectedFields: SelectedFields;
   rootTypeNames: Set<string>;
@@ -159,7 +154,6 @@ function buildOperationAndCollectVariables({
           ancestors: [],
           ignore,
           depthLimit,
-          circularReferenceDepth,
           schema,
           depth: 0,
           argNames,
@@ -180,7 +174,6 @@ function resolveSelectionSet({
   ancestors,
   ignore,
   depthLimit,
-  circularReferenceDepth,
   schema,
   depth,
   argNames,
@@ -195,7 +188,6 @@ function resolveSelectionSet({
   firstCall?: boolean;
   ignore: Ignore;
   depthLimit: number;
-  circularReferenceDepth: number;
   schema: GraphQLSchema;
   depth: number;
   selectedFields: SelectedFields;
@@ -221,12 +213,6 @@ function resolveSelectionSet({
     return {
       kind: Kind.SELECTION_SET,
       selections: types
-        .filter(
-          (t) =>
-            !hasCircularRef([...ancestors, t], {
-              depth: circularReferenceDepth
-            })
-        )
         .map<InlineFragmentNode>((t) => {
           return {
             kind: Kind.INLINE_FRAGMENT,
@@ -245,7 +231,6 @@ function resolveSelectionSet({
               ancestors,
               ignore,
               depthLimit,
-              circularReferenceDepth,
               schema,
               depth,
               argNames,
@@ -267,12 +252,6 @@ function resolveSelectionSet({
     return {
       kind: Kind.SELECTION_SET,
       selections: types
-        .filter(
-          (t) =>
-            !hasCircularRef([...ancestors, t], {
-              depth: circularReferenceDepth
-            })
-        )
         .map<InlineFragmentNode>((t) => {
           return {
             kind: Kind.INLINE_FRAGMENT,
@@ -291,7 +270,6 @@ function resolveSelectionSet({
               ancestors,
               ignore,
               depthLimit,
-              circularReferenceDepth,
               schema,
               depth,
               argNames,
@@ -335,11 +313,6 @@ function resolveSelectionSet({
     return {
       kind: Kind.SELECTION_SET,
       selections: Object.keys(fields)
-        .filter((fieldName) => {
-          return !hasCircularRef([...ancestors, getNamedType(fields[fieldName].type)], {
-            depth: circularReferenceDepth
-          });
-        })
         .map((fieldName) => {
           const selectedSubFields =
             typeof selectedFields === "object" ? selectedFields[fieldName] : true;
@@ -352,7 +325,6 @@ function resolveSelectionSet({
               ancestors,
               ignore,
               depthLimit,
-              circularReferenceDepth,
               schema,
               depth,
               argNames,
@@ -430,7 +402,6 @@ function resolveField({
   ancestors,
   ignore,
   depthLimit,
-  circularReferenceDepth,
   schema,
   depth,
   argNames,
@@ -445,7 +416,6 @@ function resolveField({
   firstCall?: boolean;
   ignore: Ignore;
   depthLimit: number;
-  circularReferenceDepth: number;
   schema: GraphQLSchema;
   depth: number;
   selectedFields: SelectedFields;
@@ -522,7 +492,6 @@ function resolveField({
           ancestors: [...ancestors, type],
           ignore,
           depthLimit,
-          circularReferenceDepth,
           schema,
           depth: depth + 1,
           argNames,
@@ -542,22 +511,4 @@ function resolveField({
     ...(fieldName !== field.name && { alias: { kind: Kind.NAME, value: fieldName } }),
     arguments: args
   };
-}
-
-function hasCircularRef(
-  types: GraphQLNamedType[],
-  config: {
-    depth: number;
-  } = {
-    depth: 1
-  }
-): boolean {
-  const type = types[types.length - 1];
-
-  if (isScalarType(type)) {
-    return false;
-  }
-
-  const size = types.filter((t) => t.name === type.name).length;
-  return size > config.depth;
 }
