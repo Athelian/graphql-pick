@@ -32,7 +32,6 @@ import {
 import configManager from "./config/index.js";
 
 let operationVariables: VariableDefinitionNode[] = [];
-let fieldTypeMap = new Map();
 
 function addOperationVariable(variable: VariableDefinitionNode) {
   operationVariables.push(variable);
@@ -40,10 +39,6 @@ function addOperationVariable(variable: VariableDefinitionNode) {
 
 function resetOperationVariables() {
   operationVariables = [];
-}
-
-function resetFieldMap() {
-  fieldTypeMap = new Map();
 }
 
 export type SelectedFields =
@@ -63,7 +58,6 @@ export function buildOperationNodeForField({
   selectedFields: SelectedFields;
 }) {
   resetOperationVariables();
-  resetFieldMap();
 
   const rootTypeNames = getRootTypeNames(schema);
 
@@ -78,7 +72,6 @@ export function buildOperationNodeForField({
   (operationNode as any).variableDefinitions = [...operationVariables];
 
   resetOperationVariables();
-  resetFieldMap();
 
   return operationNode;
 }
@@ -357,16 +350,7 @@ function resolveField({
   }
 
   const fieldPath = [...path, field.name];
-  const fieldPathStr = fieldPath.join(".");
   let fieldName = field.name;
-  if (fieldTypeMap.has(fieldPathStr) && fieldTypeMap.get(fieldPathStr) !== field.type.toString()) {
-    fieldName += (field.type as any)
-      .toString()
-      .replace("!", "NonNull")
-      .replace("[", "List")
-      .replace("]", "");
-  }
-  fieldTypeMap.set(fieldPathStr, field.type.toString());
 
   if (!isScalarType(namedType) && !isEnumType(namedType)) {
     return {
