@@ -61,7 +61,6 @@ export function buildOperationNodeForField({
   field,
   models,
   ignore = [],
-  depthLimit,
   argNames,
   selectedFields = true
 }: {
@@ -70,7 +69,6 @@ export function buildOperationNodeForField({
   field: string;
   models?: string[];
   ignore?: Ignore;
-  depthLimit?: number;
   argNames?: string[];
   selectedFields?: SelectedFields;
 }) {
@@ -85,7 +83,6 @@ export function buildOperationNodeForField({
     kind,
     models: models || [],
     ignore,
-    depthLimit: depthLimit || Infinity,
     argNames,
     selectedFields,
     rootTypeNames
@@ -106,7 +103,6 @@ function buildOperationAndCollectVariables({
   kind,
   models,
   ignore,
-  depthLimit,
   argNames,
   selectedFields,
   rootTypeNames
@@ -116,7 +112,6 @@ function buildOperationAndCollectVariables({
   kind: OperationTypeNode;
   models: string[];
   ignore: Ignore;
-  depthLimit: number;
   argNames?: string[];
   selectedFields: SelectedFields;
   rootTypeNames: Set<string>;
@@ -153,9 +148,7 @@ function buildOperationAndCollectVariables({
           path: [],
           ancestors: [],
           ignore,
-          depthLimit,
           schema,
-          depth: 0,
           argNames,
           selectedFields,
           rootTypeNames
@@ -173,9 +166,7 @@ function resolveSelectionSet({
   path,
   ancestors,
   ignore,
-  depthLimit,
   schema,
-  depth,
   argNames,
   selectedFields,
   rootTypeNames
@@ -187,17 +178,11 @@ function resolveSelectionSet({
   ancestors: GraphQLNamedType[];
   firstCall?: boolean;
   ignore: Ignore;
-  depthLimit: number;
   schema: GraphQLSchema;
-  depth: number;
   selectedFields: SelectedFields;
   argNames?: string[];
   rootTypeNames: Set<string>;
 }): SelectionSetNode | void {
-  if (typeof selectedFields === "boolean" && depth > depthLimit) {
-    return;
-  }
-
   if (isUnionType(type)) {
     const selectedFragments = Object.values(selectedFields)
       .filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD)
@@ -230,9 +215,7 @@ function resolveSelectionSet({
               path,
               ancestors,
               ignore,
-              depthLimit,
               schema,
-              depth,
               argNames,
               selectedFields,
               rootTypeNames
@@ -269,9 +252,7 @@ function resolveSelectionSet({
               path,
               ancestors,
               ignore,
-              depthLimit,
               schema,
-              depth,
               argNames,
               selectedFields,
               rootTypeNames
@@ -324,9 +305,7 @@ function resolveSelectionSet({
               path: [...path, fieldName],
               ancestors,
               ignore,
-              depthLimit,
               schema,
-              depth,
               argNames,
               selectedFields: selectedSubFields,
               rootTypeNames
@@ -401,9 +380,7 @@ function resolveField({
   path,
   ancestors,
   ignore,
-  depthLimit,
   schema,
-  depth,
   argNames,
   selectedFields,
   rootTypeNames
@@ -415,9 +392,7 @@ function resolveField({
   ancestors: GraphQLNamedType[];
   firstCall?: boolean;
   ignore: Ignore;
-  depthLimit: number;
   schema: GraphQLSchema;
-  depth: number;
   selectedFields: SelectedFields;
   argNames?: string[];
   rootTypeNames: Set<string>;
@@ -491,9 +466,7 @@ function resolveField({
           path: fieldPath,
           ancestors: [...ancestors, type],
           ignore,
-          depthLimit,
           schema,
-          depth: depth + 1,
           argNames,
           selectedFields,
           rootTypeNames
