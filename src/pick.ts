@@ -61,7 +61,7 @@ function buildOperationNodeForPaths(field: string, fieldPaths: string[]): Operat
 
   const schema = configManager.getSchema();
 
-  const selectedFields = createNestedJsonFromPaths(fieldPaths);
+  const selectedFields = createSelectedFieldsFromFieldPaths(fieldPaths);
 
   const operationDefinition = buildOperationNodeForField({
     schema,
@@ -72,45 +72,42 @@ function buildOperationNodeForPaths(field: string, fieldPaths: string[]): Operat
   return operationDefinition;
 }
 
-function createNestedJsonFromPaths(paths: string[]): Record<string, any> {
+function createSelectedFieldsFromFieldPaths(fieldPaths: string[]): Record<string, any> {
   const result: Record<string, any> = {};
 
-  for (const path of paths) {
-    const parts = path.split(".");
+  for (const path of fieldPaths) {
+    const paths = splitPath(path);
     let current = result;
 
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (isFragmentPath(part)) {
-        const frag = configManager.findFragment(part);
+    for (let i = 0; i < paths.length; i++) {
+      const path = paths[i];
+      if (isFragmentPath(path)) {
+        const frag = configManager.findFragmentByPath(path);
         if (frag) {
-          const node: FragmentSpreadNode = {
+          fragments.add(frag);
+          current[path] = {
             kind: Kind.FRAGMENT_SPREAD,
             name: {
               kind: Kind.NAME,
-              value: parseFragmentPath(part)
+              value: parseFragmentPath(path)
             },
             directives: []
-          };
-          current[part] = node;
-          fragments.add(frag);
+          } as FragmentSpreadNode;
         }
-      } else if (isAliasPath(part)) {
-        const alias = parseAliasPath(part);
-        if (alias) {
-          const node: NameNode = {
-            kind: Kind.NAME,
-            value: alias
-          };
-          current[normalizeAliasPath(part)] = node;
-        }
-      } else if (i === parts.length - 1) {
-        current[part] = true;
+      } else if (isAliasPath(path)) {
+        const alias = parseAliasPath(path) as string;
+        const node: NameNode = {
+          kind: Kind.NAME,
+          value: alias
+        };
+        current[normalizeAliasPath(path)] = node;
+      } else if (i === paths.length - 1) {
+        current[path] = true;
       } else {
-        if (!current[part]) {
-          current[part] = {};
+        if (!current[path]) {
+          current[path] = {};
         }
-        current = current[part];
+        current = current[path];
       }
     }
   }

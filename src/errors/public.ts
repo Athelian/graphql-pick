@@ -11,14 +11,6 @@ export class ConfigRejectionError extends PublicError {
   }
 }
 
-export class AmbiguousAntiResolverPatternError extends ConfigRejectionError {
-  constructor() {
-    super(
-      "The ignore pattern must unambiguously reduce all related unions to one member."
-    );
-  }
-}
-
 export class ImpureFragmentDefinitionsError extends ConfigRejectionError {
   constructor() {
     super("All definitions must be fragment definitions.");
@@ -36,11 +28,5 @@ export class UnmatchedFragmentDefinitionError extends PublicError {
 export class UnspecifiedSelectionsError extends PublicError {
   constructor() {
     super("Missing selection in field path.");
-  }
-}
-
-export class UnspecifiedTypeResolverError extends PublicError {
-  constructor() {
-    super("Missing type resolution for union type.");
   }
 }

@@ -12,7 +12,7 @@ import {
   FragmentsUninitializedError,
   SchemaUninitializedError
 } from "../errors/internal.js";
-import { getFragmentPaths, parseFragmentPath } from "../utils/index.js";
+import { parseFragmentPath } from "../utils/index.js";
 import { DEFAULT_OPTIONS } from "./constants.js";
 import { parseOptions } from "./parser.js";
 import { Options, ParsedOptions, ValidatedOptions } from "./types";
@@ -43,7 +43,7 @@ class ConfigManager {
     this.schema = schema;
 
     if (options) {
-      assertValidConfiguration(schema, options);
+      assertValidConfiguration(options);
       this.options = parseOptions(options as ValidatedOptions);
     }
 
@@ -105,21 +105,12 @@ class ConfigManager {
     return this.options.fragments.find((f) => name === f.name.value);
   }
 
-  public findFragment(path: string) {
+  public findFragmentByPath(path: string) {
     if (!this.options.fragments) {
       throw new FragmentsUninitializedError();
     }
 
-    return this.options.fragments.find((f) => parseFragmentPath(path) === f.name.value);
-  }
-
-  public findFragments(paths: string[]) {
-    if (!this.options.fragments) {
-      throw new FragmentsUninitializedError();
-    }
-    const fragmentPaths = getFragmentPaths(paths);
-
-    return this.options.fragments.filter((f) => fragmentPaths.includes(f.name.value));
+    return this.findFragmentByName(parseFragmentPath(path));
   }
 
   public composeFragments(fragments: FragmentDefinitionNode[]): FragmentSpreadNode[] {

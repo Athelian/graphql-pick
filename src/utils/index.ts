@@ -2,8 +2,7 @@ import {
   ALIAS_DELIMITER,
   ALIAS_MATCHER,
   FRAGMENT_DELIMITER,
-  PATH_SEPARATOR,
-  TYPE_CONDITION_DELIMITER
+  PATH_SEPARATOR
 } from "../config/constants.js";
 
 //
@@ -21,11 +20,7 @@ export function isAliasPath(path: string) {
 }
 
 export function hasAliasPath(paths: string[]) {
-  return paths.some(isTypeConditionPath);
-}
-
-export function normalizeAliasPath(path: string) {
-  return path.replace(ALIAS_MATCHER, "");
+  return paths.some(isAliasPath);
 }
 
 export function parseAliasPath(path: string) {
@@ -36,29 +31,12 @@ export function wrapAliasPath(alias: string, field: string) {
   return `${ALIAS_DELIMITER}${alias}_${field}`;
 }
 
+export function normalizeAliasPath(path: string) {
+  return path.replace(ALIAS_MATCHER, "");
+}
+
 export function getAliasPaths(paths: string[]) {
   return paths.filter(isAliasPath).map(parseAliasPath);
-}
-
-//
-export function isTypeConditionPath(path: string) {
-  return path.startsWith(TYPE_CONDITION_DELIMITER);
-}
-
-export function hasTypeConditionPath(paths: string[]) {
-  return paths.some(isTypeConditionPath);
-}
-
-export function parseTypeConditionPath(path: string) {
-  return path.slice(TYPE_CONDITION_DELIMITER.length);
-}
-
-export function wrapTypeConditionPath(type: string) {
-  return `${TYPE_CONDITION_DELIMITER}${type}`;
-}
-
-export function getTypeConditionPaths(paths: string[]) {
-  return paths.filter(isTypeConditionPath).map(parseTypeConditionPath);
 }
 
 //
