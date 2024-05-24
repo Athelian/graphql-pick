@@ -114,7 +114,30 @@ export default function pick(fieldPaths: string[]): DocumentNode {
     );
   }
 
+  findNestedOperationFragments();
+
   return configManager.composeDocument(operations, operationFragments);
+}
+
+export function findNestedOperationFragments(): void {
+  const selectionSets: SelectionSetNode[] = [];
+
+  for (const of of operationFragments) {
+    selectionSets.push(of.selectionSet);
+
+    while (selectionSets.length) {
+      const selectionSet = selectionSets.shift() as SelectionSetNode;
+
+      for (const s of selectionSet.selections) {
+        if (s.kind === Kind.FRAGMENT_SPREAD) {
+          addOperationFragment(configManager.findFragmentByName(s.name.value));
+        }
+        if ("selectionSet" in s && s.selectionSet) {
+          selectionSets.push(s.selectionSet);
+        }
+      }
+    }
+  }
 }
 
 function buildOperationNodeForField({

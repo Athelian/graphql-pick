@@ -236,6 +236,40 @@ describe("pick with fragment definitions", () => {
     await expect(myFunction).toThrow(Error);
   });
 
+  it("should include nested fragments", async () => {
+    const organizationFragment = gql`
+      fragment Organization on Organization {
+        name
+      }
+    `;
+    const userFragment = gql`
+      fragment User on User {
+        organization {
+          ...Organization
+        }
+      }
+    `;
+
+    init(schema, { fragments: [organizationFragment, userFragment] });
+
+    const expected = gql`
+      query {
+        currentUser {
+          ...User
+        }
+      }
+
+      ${organizationFragment}
+      ${userFragment}
+    `;
+
+    const result = pick(["currentUser.__fragment_User"]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
   it("should pick fields by a fragment definition", async () => {
     init(schema, {
       fragments: [organizationNameFragment]
