@@ -162,6 +162,25 @@ describe("pick without options", () => {
 
     expect(resultResponse).toEqual(expectedResponse);
   });
+
+  it("should pick fields with a name", async () => {
+    const expected = gql`
+      query {
+        currentUser {
+          company: organization {
+            ... on Organization {
+              name
+            }
+          }
+        }
+      }
+    `;
+    const result = pick(["currentUser.__alias_company_organization.name"]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
 });
 
 describe("pick with invalid options", () => {
@@ -430,6 +449,27 @@ describe("pick with fragment definitions", () => {
       "currentUser.address.__fragment_AddressZip",
       "currentUser.organization.__fragment_OrganizationName"
     ]);
+    const expectedResponse = await getResponse(schemaWithMocks, expected);
+    const resultResponse = await getResponse(schemaWithMocks, result);
+
+    expect(resultResponse).toEqual(expectedResponse);
+  });
+
+  it("should pick fields with an aliased fragment", async () => {
+    init(schema, { fragments: [organizationNameFragment] });
+
+    const expected = gql`
+      query {
+        currentUser {
+          company: organization {
+            ...OrganizationName
+          }
+        }
+      }
+
+      ${organizationNameFragment}
+    `;
+    const result = pick(["currentUser.__alias_company_organization.__fragment_OrganizationName"]);
     const expectedResponse = await getResponse(schemaWithMocks, expected);
     const resultResponse = await getResponse(schemaWithMocks, result);
 

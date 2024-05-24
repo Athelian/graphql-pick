@@ -62,10 +62,10 @@ describe("pick", () => {
     `;
     const result = pick([
       "user.id",
+      "users.__fragment_UserFields",
       "currentUser.id",
       "currentUser.__fragment_UserFields",
       "currentUser.__fragment_ModelId",
-      "users.__fragment_UserFields",
       "currentUser.organization.__fragment_OrganizationId",
       "currentUser.organization.__fragment_OrganizationName",
       "currentUser.organization.users.id",

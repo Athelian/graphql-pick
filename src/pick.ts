@@ -310,9 +310,11 @@ function resolveSelectionSet({
           const selectedSubFields =
             typeof selectedFields === "object" ? (selectedFields as any)[fieldName] : true;
           if (selectedSubFields) {
+            const { alias } = selectedSubFields;
+            delete selectedSubFields.alias;
             return resolveField({
               field: fields[fieldName],
-              alias: selectedSubFields.kind === Kind.NAME ? selectedSubFields : undefined,
+              alias,
               path: [...path, fieldName],
               schema,
               selectedFields: selectedSubFields,
@@ -438,6 +440,7 @@ function resolveField({
 
   if (!isScalarType(namedType) && !isEnumType(namedType)) {
     return {
+      alias,
       kind: Kind.FIELD,
       name: {
         kind: Kind.NAME,
@@ -499,7 +502,11 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
           kind: Kind.NAME,
           value: alias
         };
-        current[normalizeAliasPath(path)] = node;
+        current[normalizeAliasPath(path)] = {
+          ...current[normalizeAliasPath(path)],
+          alias: node
+        };
+        current = current[normalizeAliasPath(path)];
       } else if (i === paths.length - 1) {
         current[path] = true;
       } else {
