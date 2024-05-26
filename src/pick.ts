@@ -42,11 +42,10 @@ import {
   isFragmentPath,
   joinPath,
   nonNullable,
-  normalizeAliasPath,
-  parseAliasPath,
   parseFragmentPath,
   splitPath,
-  splitPaths
+  splitPaths,
+  unwrapAliasPath
 } from "./utils/index.js";
 import assertValidPick from "./validator.js";
 
@@ -79,14 +78,13 @@ function resetOperationVariables() {
 }
 
 type SelectedFragment = { fragmentName: string };
-type SelectedAlias = { alias: string };
-
+type SelectedAlias = NameNode;
 type SelectedFields =
   | {
       [key: string]: SelectedFields;
     }
   | boolean
-  | SelectedFragment
+  | { fragmentName: string }
   | SelectedAlias;
 
 export default function pick(fieldPaths: string[]): DocumentNode {
@@ -335,11 +333,9 @@ function resolveSelectionSet({
               ? (selectedFields as any)[fieldName]
               : true;
           if (selectedSubFields) {
-            const { alias } = selectedSubFields;
-            delete selectedSubFields.alias;
             return resolveField({
               field: fields[fieldName],
-              alias,
+              alias: selectedSubFields.alias,
               path: [...path, fieldName],
               schema,
               selectedFields: selectedSubFields,
@@ -360,13 +356,11 @@ function resolveSelectionSet({
           selectedFragments
             .map((f) => {
               const fragment = configManager.findFragmentByName(f.fragmentName);
-              const fragmentName = fragment?.typeCondition.name.value;
-              if (!fragmentName) return;
               const typeNames = [
                 type.name,
                 ...type.getInterfaces().map((i) => i.name)
               ];
-              if (typeNames.includes(fragmentName))
+              if (typeNames.includes(fragment?.typeCondition.name.value))
                 return {
                   kind: Kind.FRAGMENT_SPREAD,
                   name: {
@@ -523,23 +517,23 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
 
     for (let i = 0; i < paths.length; i++) {
       const path = paths[i];
+
       if (isFragmentPath(path)) {
         const fragment = configManager.findFragmentByPath(path);
         if (fragment) {
-          addOperationFragment(fragment);
           current[path] = { fragmentName: parseFragmentPath(path) };
+          addOperationFragment(fragment);
         }
       } else if (isAliasPath(path)) {
-        const alias = parseAliasPath(path) as string;
-        const node: NameNode = {
-          kind: Kind.NAME,
-          value: alias
+        const [alias, field] = unwrapAliasPath(path) as [string, string];
+        current[field] = {
+          ...current[field],
+          alias: {
+            kind: Kind.NAME,
+            value: alias
+          }
         };
-        current[normalizeAliasPath(path)] = {
-          ...current[normalizeAliasPath(path)],
-          alias: node
-        };
-        current = current[normalizeAliasPath(path)];
+        current = current[field];
       } else if (i === paths.length - 1) {
         current[path] = true;
       } else {
@@ -557,5 +551,5 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
 function getSelectedFragmentsFromSelectedFields(
   selectedFields: SelectedFields
 ): SelectedFragment[] {
-  return Object.values(selectedFields).filter((sf) => !!sf.fragmentName);
+  return Object.values(selectedFields).filter((sf) => "fragmentName" in sf);
 }

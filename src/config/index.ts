@@ -115,7 +115,9 @@ class ConfigManager {
     return this.findFragmentByName(parseFragmentPath(path));
   }
 
-  public composeFragments(fragments: FragmentDefinitionNode[]): FragmentSpreadNode[] {
+  public composeFragments(
+    fragments: FragmentDefinitionNode[]
+  ): FragmentSpreadNode[] {
     return fragments.map((f) => ({
       kind: Kind.FRAGMENT_SPREAD,
       name: {

@@ -31,12 +31,16 @@ export function parseAliasPath(path: string) {
   return path.match(ALIAS_MATCHER)?.[1];
 }
 
+export function normalizeAliasPath(path: string) {
+  return path.replace(ALIAS_MATCHER, "");
+}
+
 export function wrapAliasPath(alias: string, field: string) {
   return `${ALIAS_DELIMITER}${alias}_${field}`;
 }
 
-export function normalizeAliasPath(path: string) {
-  return path.replace(ALIAS_MATCHER, "");
+export function unwrapAliasPath(path: string) {
+  return [parseAliasPath(path), normalizeAliasPath(path)];
 }
 
 export function getAliasPaths(paths: string[]) {
