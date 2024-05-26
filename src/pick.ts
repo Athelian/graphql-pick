@@ -41,6 +41,7 @@ import {
   isAliasPath,
   isFragmentPath,
   joinPath,
+  nonNullable,
   normalizeAliasPath,
   parseAliasPath,
   parseFragmentPath,
@@ -77,13 +78,16 @@ function resetOperationVariables() {
   operationVariables = [];
 }
 
-export type SelectedFields =
+type SelectedFragment = { fragmentName: string };
+type SelectedAlias = { alias: string };
+
+type SelectedFields =
   | {
       [key: string]: SelectedFields;
     }
   | boolean
-  | FragmentSpreadNode
-  | NameNode;
+  | SelectedFragment
+  | SelectedAlias;
 
 export default function pick(fieldPaths: string[]): DocumentNode {
   assertValidPick(fieldPaths);
@@ -227,7 +231,8 @@ function resolveSelectionSet({
   argNames?: string[];
   rootTypeNames: Set<string>;
 }): SelectionSetNode | void {
-  const selectedFragments = getFragmentSpreadsFromSelectedFields(selectedFields);
+  const selectedFragments =
+    getSelectedFragmentsFromSelectedFields(selectedFields);
 
   if (isUnionType(type)) {
     const types = type.getTypes();
@@ -257,13 +262,29 @@ function resolveSelectionSet({
         })
         .filter(
           (fragmentNode) =>
-            "selectionSet" in fragmentNode && fragmentNode?.selectionSet?.selections?.length > 0
+            "selectionSet" in fragmentNode &&
+            fragmentNode?.selectionSet?.selections?.length > 0
         )
         .concat(
-          selectedFragments.filter((f) => {
-            const fragment = configManager.findFragmentByName(f.name.value);
-            return type.getTypes().some((t) => t.name === fragment?.typeCondition.name.value);
-          })
+          selectedFragments
+            .map((f) => {
+              const fragment = configManager.findFragmentByName(f.fragmentName);
+              if (
+                type
+                  .getTypes()
+                  .some((t) => t.name === fragment?.typeCondition.name.value)
+              ) {
+                return {
+                  kind: Kind.FRAGMENT_SPREAD,
+                  name: {
+                    kind: Kind.NAME,
+                    value: f.fragmentName
+                  },
+                  directives: []
+                } as FragmentSpreadNode;
+              }
+            })
+            .filter(nonNullable)
         )
     };
   }
@@ -296,7 +317,9 @@ function resolveSelectionSet({
             }) as SelectionSetNode
           };
         })
-        .filter((fragmentNode) => fragmentNode?.selectionSet?.selections?.length > 0)
+        .filter(
+          (fragmentNode) => fragmentNode?.selectionSet?.selections?.length > 0
+        )
     };
   }
 
@@ -308,7 +331,9 @@ function resolveSelectionSet({
       selections: Object.keys(fields)
         .map((fieldName) => {
           const selectedSubFields =
-            typeof selectedFields === "object" ? (selectedFields as any)[fieldName] : true;
+            typeof selectedFields === "object"
+              ? (selectedFields as any)[fieldName]
+              : true;
           if (selectedSubFields) {
             const { alias } = selectedSubFields;
             delete selectedSubFields.alias;
@@ -332,19 +357,35 @@ function resolveSelectionSet({
           return true;
         })
         .concat(
-          selectedFragments.filter((f) => {
-            const fragment = configManager.findFragmentByName(f.name.value);
-            const fragmentName = fragment?.typeCondition.name.value;
-            if (!fragmentName) return;
-            const typeNames = [type.name, ...type.getInterfaces().map((i) => i.name)];
-            return typeNames.includes(fragmentName);
-          })
+          selectedFragments
+            .map((f) => {
+              const fragment = configManager.findFragmentByName(f.fragmentName);
+              const fragmentName = fragment?.typeCondition.name.value;
+              if (!fragmentName) return;
+              const typeNames = [
+                type.name,
+                ...type.getInterfaces().map((i) => i.name)
+              ];
+              if (typeNames.includes(fragmentName))
+                return {
+                  kind: Kind.FRAGMENT_SPREAD,
+                  name: {
+                    kind: Kind.NAME,
+                    value: f.fragmentName
+                  },
+                  directives: []
+                } as FragmentSpreadNode;
+            })
+            .filter(nonNullable)
         )
     };
   }
 }
 
-function resolveVariable(arg: GraphQLArgument, name?: string): VariableDefinitionNode {
+function resolveVariable(
+  arg: GraphQLArgument,
+  name?: string
+): VariableDefinitionNode {
   function resolveVariableType(type: GraphQLList<any>): ListTypeNode;
   function resolveVariableType(type: GraphQLNonNull<any>): NonNullTypeNode;
   function resolveVariableType(type: GraphQLInputType): TypeNode;
@@ -486,15 +527,7 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
         const fragment = configManager.findFragmentByPath(path);
         if (fragment) {
           addOperationFragment(fragment);
-          const node: FragmentSpreadNode = {
-            kind: Kind.FRAGMENT_SPREAD,
-            name: {
-              kind: Kind.NAME,
-              value: parseFragmentPath(path)
-            },
-            directives: []
-          };
-          current[path] = node;
+          current[path] = { fragmentName: parseFragmentPath(path) };
         }
       } else if (isAliasPath(path)) {
         const alias = parseAliasPath(path) as string;
@@ -521,8 +554,8 @@ function getSelectedFieldsFromFieldPaths(fieldPaths: string[]): SelectedFields {
   return result;
 }
 
-function getFragmentSpreadsFromSelectedFields(
+function getSelectedFragmentsFromSelectedFields(
   selectedFields: SelectedFields
-): FragmentSpreadNode[] {
-  return Object.values(selectedFields).filter((sf) => sf.kind === Kind.FRAGMENT_SPREAD);
+): SelectedFragment[] {
+  return Object.values(selectedFields).filter((sf) => !!sf.fragmentName);
 }

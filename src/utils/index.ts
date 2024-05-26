@@ -63,3 +63,7 @@ export function wrapFragmentPath(fragment: string) {
 export function getFragmentPaths(paths: string[]) {
   return paths.filter(isFragmentPath).map(parseFragmentPath);
 }
+
+export function nonNullable<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
